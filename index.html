@@ -826,20 +826,20 @@ async function loadEmployees() {
     const drivesData = await api('/sites/' + siteId + '/drives');
     const docDrive = drivesData.value.find(d => d.name === '문서') || drivesData.value[0];
     const t = await token();
-    const res = await fetch(GRAPH + '/drives/' + docDrive.id + '/root:/Employee_GL.xlsx:/content', { headers: { Authorization: 'Bearer ' + t } });
+    const res = await fetch(GRAPH + '/drives/' + docDrive.id + '/root:/employee_search.xlsx:/content', { headers: { Authorization: 'Bearer ' + t } });
     if (!res.ok) throw new Error('Employee file not found');
     const buf = await res.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array' });
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(ws);
     employeeData = rows.map(r => ({
-      fn: r['Function'] || '',
-      dept: r['Function'] || '',
-      team: r['팀(Team)'] || '',
-      cctrName: r['코스트센터 명(CCTR Name)'] || '',
-      cctr: r['코스트센터(Cost Center)'] || '',
-      nameKr: r['성함_한글'] || '',
-      name: r['Name_ENG'] || '',
+      fn: r['Company'] || '',
+      dept: r['Department'] || '',
+      team: r['Team'] || '',
+      cctrName: '',
+      cctr: '',
+      nameKr: '',
+      name: r['EngName'] || '',
       email: r['EMail'] || r['email'] || ''
     })).filter(r => r.email && r.name);
   } catch(e) {
