@@ -1051,7 +1051,7 @@ function renderFiles(prefix) {
   const store = prefix === 'reg' ? regFiles : prefix === 'dis' ? disFiles : tfrFiles;
   const totalMB = store.reduce((s,f) => s + f.size, 0) / 1024 / 1024;
   document.getElementById(prefix + '-file-list').innerHTML = store.map((f,i) =>
-    '<div class="file-item"><span>' + f.name + ' <span style="color:#605e5c">(' + (f.size/1024).toFixed(1) + ' KB)</span></span><button onclick="removeFile('' + prefix + '',' + i + ')">×</button></div>'
+    '<div class="file-item"><span>' + f.name + ' <span style="color:#605e5c">(' + (f.size/1024).toFixed(1) + ' KB)</span></span><button onclick="removeFile(\'' + prefix + '\',' + i + ')">×</button></div>'
   ).join('') + (store.length ? '<div style="font-size:11px;color:#605e5c;text-align:right;margin-top:4px">총 ' + totalMB.toFixed(1) + ' MB / 10 MB</div>' : '');
 }
 
@@ -1264,7 +1264,7 @@ async function loadApprovalQueue() {
       const f = item.fields;
       let rf = {};
       try { const r = await api('/sites/' + siteId + '/lists/FA_Requests/items/' + f.RequestID + '?$expand=fields'); rf = r.fields; } catch(e) {}
-      return '<tr><td style="color:#0078d4;cursor:pointer" onclick="showDetail(' + f.RequestID + ')">' + f.RequestID + '</td><td>' + (rf.RequesterEmail||'') + '</td><td><span class="badge badge-type">' + (rf.FAType||'') + '</span></td><td>' + (rf.Title||'') + '</td><td><span class="badge badge-' + (rf.Status||'대기') + '">' + (rf.Status||'') + '</span></td><td>' + (rf.RequestDate ? fmtDate(rf.RequestDate) : '') + '</td><td onclick="event.stopPropagation()"><button class="btn-primary" style="padding:3px 10px;font-size:11px" onclick="processApproval(' + item.id + ','승인',' + f.RequestID + ','' + f.ApproverRole + '')">승인</button> <button class="btn-secondary" style="padding:3px 10px;font-size:11px" onclick="processApproval(' + item.id + ','반려',' + f.RequestID + ','' + f.ApproverRole + '')">반려</button></td></tr>';
+      return `<tr><td style="color:#0078d4;cursor:pointer" onclick="showDetail(${f.RequestID})">${f.RequestID}</td><td>${rf.RequesterEmail||''}</td><td><span class="badge badge-type">${rf.FAType||''}</span></td><td>${rf.Title||''}</td><td><span class="badge badge-${rf.Status||'대기'}">${rf.Status||''}</span></td><td>${rf.RequestDate ? fmtDate(rf.RequestDate) : ''}</td><td onclick="event.stopPropagation()"><button class="btn-primary" style="padding:3px 10px;font-size:11px" onclick="processApproval(${item.id},'승인',${f.RequestID},'${f.ApproverRole}')">승인</button> <button class="btn-secondary" style="padding:3px 10px;font-size:11px" onclick="processApproval(${item.id},'반려',${f.RequestID},'${f.ApproverRole}')">반려</button></td></tr>`;
     }));
     tbody.innerHTML = rows.join('');
   } catch(e) {}
