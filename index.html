@@ -934,13 +934,7 @@ function initAssetRows() {
       <input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px">
       <input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px">
       <input type="date" style="border:1px solid #d2d0ce;border-radius:4px">
-      <select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px"><option value="">CCTR</option><option value="(47900704) RD Office">(47900704) RD Office [RD Office]</option>
-<option value="(47900705) CEO Office">(47900705) CEO Office [CEO Office]</option>
-<option value="(47900715) HR">(47900715) HR [HR]</option>
-<option value="(47900708) Compliance">(47900708) Compliance [Legal & Compliance]</option>
-<option value="(47926134) PMM Head Office">(47926134) PMM Head Office [PMM]</option>
-<option value="(47926145) Homologation">(47926145) Homologation [Delivery & Homologation]</option>
-<option...</select>
+      <select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px"><option value="">CCTR</option>${CCTR_DATA.map(c => '<option value="(' + c.code + ') ' + c.name + '">(' + c.code + ') ' + c.name + ' [' + c.team + ']</option>').join('')}</select>
       <input type="number" placeholder="취득원가" style="border:1px solid #d2d0ce;border-radius:4px">
       <input type="number" placeholder="감가상각" style="border:1px solid #d2d0ce;border-radius:4px">
       <input type="number" placeholder="장부가액" readonly style="border:1px solid #d2d0ce;border-radius:4px;background:#f3f2f1">
@@ -974,10 +968,7 @@ function addCostRow() {
     <input type="text" placeholder="처분비용/매각금액" style="border:1px solid #d2d0ce;border-radius:4px">
     <input type="text" placeholder="BP Code / Name" style="border:1px solid #d2d0ce;border-radius:4px">
     <input type="text" placeholder="사유" style="border:1px solid #d2d0ce;border-radius:4px">
-    <select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px"><option value="">CCTR</option><option value="(47900704) RD Office">(47900704) RD Office [RD Office]</option>
-<option value="(47900705) CEO Office">(47900705) CEO Office [CEO Office]</option>
-<option value="(47900715) HR">(47900715) HR [HR]</option>
-<option value="(47900708) Compliance">(47900708) Compliance [Legal & Compliance]<...</select>
+    <select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px"><option value="">CCTR</option>${CCTR_DATA.map(c => '<option value="(' + c.code + ') ' + c.name + '">(' + c.code + ') ' + c.name + ' [' + c.team + ']</option>').join('')}</select>
     <select style="border:1px solid #d2d0ce;border-radius:4px"><option value="KRW">KRW</option>
 <option value="USD">USD</option>
 <option value="JPY">JPY</option>
