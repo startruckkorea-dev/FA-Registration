@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FA Master Data Management</title>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.0/lib/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100vh; }
+
+#login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 16px; }
+#login-screen .logo { font-size: 22px; font-weight: 600; color: #323130; letter-spacing: 1px; }
+#login-screen .subtitle { font-size: 14px; color: #605e5c; }
+#btn-login { background: #0078d4; color: #fff; border: none; border-radius: 4px; padding: 10px 28px; font-size: 15px; cursor: pointer; margin-top: 8px; }
+#btn-login:hover:not(:disabled) { background: #006cbe; }
+#btn-login:disabled { background: #c8c6c4; cursor: not-allowed; }
+
+#app { display: none; max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+.header { background: #fff; border-radius: 6px; padding: 16px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #edebe9; }
+.header .title { font-size: 18px; font-weight: 600; color: #323130; }
+.header .user-info { font-size: 13px; color: #605e5c; display: flex; align-items: center; gap: 12px; }
+#btn-logout { background: none; border: 1px solid #d2d0ce; border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: #323130; }
+
+.tabs { display: flex; gap: 2px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 8px 18px; border: none; background: #fff; border-radius: 4px 4px 0 0; font-size: 14px; cursor: pointer; color: #605e5c; border-bottom: 3px solid transparent; }
+.tab.active { color: #0078d4; border-bottom: 3px solid #0078d4; font-weight: 500; }
+
+.card { background: #fff; border-radius: 6px; border: 1px solid #edebe9; padding: 24px; margin-bottom: 16px; }
+.card-title { font-size: 14px; font-weight: 600; color: #323130; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #edebe9; }
+.section-title { font-size: 13px; font-weight: 600; color: #0078d4; margin: 18px 0 10px; padding: 6px 10px; background: #f0f6ff; border-radius: 4px; border-left: 3px solid #0078d4; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+.form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.form-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #605e5c; }
+.form-group label .req { color: #a4262c; margin-left: 3px; }
+.form-group select, .form-group input, .form-group textarea {
+  border: 1px solid #d2d0ce; border-radius: 4px; padding: 7px 10px;
+  font-size: 13px; color: #323130; background: #fff; font-family: inherit;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #0078d4; }
+.form-group select:disabled, .form-group input:disabled { background: #f3f2f1; color: #a19f9d; }
+.form-group input[readonly] { background: #f3f2f1; color: #605e5c; }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.auto-tag { font-size: 10px; background: #e1f0ff; color: #0078d4; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+
+.appr-block { background: #f9f9f9; border: 1px solid #edebe9; border-radius: 6px; padding: 14px; margin-bottom: 10px; }
+.appr-block .appr-title { font-size: 12px; font-weight: 600; color: #323130; margin-bottom: 10px; }
+.appr-grid { display: grid; grid-template-columns: 110px 1fr 1fr; gap: 8px; align-items: end; }
+
+.file-area { border: 1.5px dashed #d2d0ce; border-radius: 4px; padding: 14px; text-align: center; cursor: pointer; }
+.file-area:hover { border-color: #0078d4; }
+.file-area input { display: none; }
+.file-area .hint { font-size: 12px; color: #605e5c; }
+.file-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+.file-item { display: flex; justify-content: space-between; align-items: center; background: #f3f2f1; border-radius: 4px; padding: 5px 10px; font-size: 12px; }
+.file-item button { background: none; border: none; color: #a4262c; cursor: pointer; }
+
+.btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.btn-primary { background: #0078d4; color: #fff; border: none; border-radius: 4px; padding: 9px 24px; font-size: 14px; cursor: pointer; font-weight: 500; }
+.btn-primary:hover { background: #006cbe; }
+.btn-secondary { background: #fff; color: #323130; border: 1px solid #d2d0ce; border-radius: 4px; padding: 9px 24px; font-size: 14px; cursor: pointer; }
+
+.notice { font-size: 12px; padding: 8px 12px; border-radius: 4px; margin-top: 6px; }
+.notice.warn { background: #fff4ce; color: #7d5700; }
+.notice.error { background: #fde7e9; color: #a4262c; }
+.notice.info { background: #dff6dd; color: #107c10; }
+
+.list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.list-table th { background: #f3f2f1; padding: 9px 10px; text-align: left; font-weight: 600; color: #323130; border-bottom: 1px solid #edebe9; font-size: 12px; }
+.list-table td { padding: 9px 10px; border-bottom: 1px solid #edebe9; color: #323130; font-size: 12px; }
+.list-table tr:hover td { background: #f3f2f1; cursor: pointer; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.badge-대기 { background: #fff4ce; color: #7d5700; }
+.badge-승인완료 { background: #dff6dd; color: #107c10; }
+.badge-반려 { background: #fde7e9; color: #a4262c; }
+.badge-type { background: #e8f4ff; color: #0078d4; }
+
+.asset-row { display: grid; grid-template-columns: 40px 2fr 2fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr 80px; gap: 6px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.asset-row input { padding: 5px 7px; font-size: 12px; }
+.cost-row { display: grid; grid-template-columns: 50px 1.5fr 2fr 2fr 1.5fr 1.2fr 1.2fr 1.2fr; gap: 6px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.cost-row input, .cost-row select { padding: 5px 7px; font-size: 12px; }
+
+#detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 998; align-items: center; justify-content: center; }
+.modal-box { background: #fff; border-radius: 8px; padding: 28px 32px; max-width: 620px; width: 95%; max-height: 85vh; overflow-y: auto; position: relative; }
+.modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: #605e5c; }
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #323130; }
+.modal-row { display: flex; padding: 7px 0; border-bottom: 0.5px solid #edebe9; font-size: 13px; }
+.modal-row:last-child { border-bottom: none; }
+.modal-label { width: 130px; min-width: 130px; color: #605e5c; font-size: 12px; }
+.modal-value { flex: 1; color: #323130; word-break: break-all; }
+
+#loading { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); align-items: center; justify-content: center; z-index: 999; }
+#loading.show { display: flex; }
+.loading-box { background: #fff; border-radius: 6px; padding: 28px 40px; font-size: 15px; color: #323130; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.spinner { width: 32px; height: 32px; border: 3px solid #edebe9; border-top: 3px solid #0078d4; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 650px) {
+  .form-row, .form-row.three, .form-row.four { grid-template-columns: 1fr; }
+  .appr-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="logo">STAR TRUCK KOREA</div>
+  <div class="subtitle">FA Master Data Management</div>
+  <button id="btn-login" onclick="signIn()" disabled>로딩 중...</button>
+  <div id="login-error" class="notice error" style="display:none;max-width:400px;text-align:center"></div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="title">FA Master Data Management</div>
+    <div class="user-info">
+      <span id="user-name"></span>
+      <button id="btn-logout" onclick="signOut()">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-reg-btn" onclick="switchTab('reg')">FA Registration</button>
+    <button class="tab" id="tab-disposal-btn" onclick="switchTab('disposal')">FA Disposal</button>
+    <button class="tab" id="tab-transfer-btn" onclick="switchTab('transfer')">FA Transfer</button>
+    <button class="tab" id="tab-list-btn" onclick="switchTab('list')">내 신청 목록</button>
+    <button class="tab" id="tab-approval-btn" onclick="switchTab('approval')">결재 대기 <span id="appr-badge" style="display:none;background:#a4262c;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button>
+    <button class="tab" id="tab-admin-btn" onclick="switchTab('admin')" style="display:none">관리자</button>
+  </div>
+
+  <!-- ========== FA REGISTRATION ========== -->
+  <div id="tab-reg">
+    <div class="card">
+      <div class="card-title">고정자산등록 (Fixed Asset Registration)</div>
+
+      <div class="section-title">1. 고정자산 정보 (Fixed Asset Information)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>자산명 (Description) <span class="req">*</span></label>
+          <input type="text" id="reg-description" placeholder="영문으로 입력해주세요">
+        </div>
+        <div class="form-group">
+          <label>Submission Date <span class="req">*</span></label>
+          <input type="date" id="reg-submission-date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>PO No. (B1 Purchase Order No.) </label>
+          <input type="text" id="reg-po-no" placeholder="xxxxxxxxx (9자리 숫자)">
+        </div>
+        <div class="form-group">
+          <label>자산취득일 (Acquisition Date) <span class="req">*</span></label>
+          <input type="date" id="reg-acquisition-date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>원가부서 (CCTR) <span class="req">*</span></label>
+          <select id="reg-cctr">
+            <option value="">-- 선택 --</option>
+            <option value="(47900704) RD Office">(47900704) RD Office [RD Office]</option>
+<option value="(47900705) CEO Office">(47900705) CEO Office [CEO Office]</option>
+<option value="(47900715) HR">(47900715) HR [HR]</option>
+<option value="(47900708) Compliance">(47900708) Compliance [Legal & Compliance]</option>
+<option value="(47926134) PMM Head Office">(47926134) PMM Head Office [PMM]</option>
+<option value="(47926145) Homologation">(47926145) Homologation [Delivery & Homologation]</option>
+<option value="(47925185) Delivery Center">(47925185) Delivery Center [Delivery & Homologation]</option>
+<option value="(47926135) Product Management">(47926135) Product Management [Product Management]</option>
+<option value="(47920205) Sales Training">(47920205) Sales Training [Product Management]</option>
+<option value="(47925155) Marketing& Communication">(47925155) Marketing& Communication [Marketing& Communication]</option>
+<option value="(47926114) Sales Head Office">(47926114) Sales Head Office [Sales]</option>
+<option value="(47926115) Sales Planning & Operation">(47926115) Sales Planning & Operation [Sales Planning & Operation]</option>
+<option value="(47927165) Bodybuilder/Fleet Sales">(47927165) Bodybuilder/Fleet Sales [BBM/Special Truck]</option>
+<option value="(47927115) Unimog Sales">(47927115) Unimog Sales [BBM/Special Truck]</option>
+<option value="(47941115) STK Field Seoul">(47941115) STK Field Seoul [STK Field Seoul]</option>
+<option value="(47928115) STK Field Busan">(47928115) STK Field Busan [STK Field Busan]</option>
+<option value="(47920115) STK Field Gwangju">(47920115) STK Field Gwangju [STK Field Gwangju]</option>
+<option value="(47910115) STK Field Jecheon">(47910115) STK Field Jecheon [STK Field Jecheon]</option>
+<option value="(47953305) CSP Head Office">(47953305) CSP Head Office [CSP]</option>
+<option value="(47955405) Technical Operation">(47955405) Technical Operation [Technical Operation]</option>
+<option value="(47954405) Unimog CSP">(47954405) Unimog CSP [Technical Operation]</option>
+<option value="(47950466) Technical Training">(47950466) Technical Training [Technical Operation]</option>
+<option value="(47954325) Parts OP & Logistics">(47954325) Parts OP & Logistics [Parts OP & Logistics]</option>
+<option value="(47954345) Parts Performance">(47954345) Parts Performance [Parts OP & Logistics]</option>
+<option value="(47954415) CRM & Call Center">(47954415) CRM & Call Center [Service & Network]</option>
+<option value="(47920765) Service & Network">(47920765) Service & Network [Service & Network]</option>
+<option value="(47954455) District Management">(47954455) District Management [Service & Network]</option>
+<option value="(47954435) Warranty">(47954435) Warranty [Service & Network]</option>
+<option value="(47900706) CFO Office">(47900706) CFO Office [F&C]</option>
+<option value="(47900825) Procurement">(47900825) Procurement [Procurement]</option>
+<option value="(47900776) Accounting">(47900776) Accounting [Accounting]</option>
+<option value="(47900775) Controlling">(47900775) Controlling [Controlling]</option>
+<option value="(47900745) IT Application">(47900745) IT Application [IT]</option>
+<option value="(47900755) IT Infrastructure">(47900755) IT Infrastructure [IT]</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Type <span class="req">*</span></label>
+          <select id="reg-type">
+            <option value="">-- 선택 --</option>
+            <option value="Newly acquired">Newly acquired</option>
+            <option value="Update/Add amount">Update/Add amount</option>
+            <option value="Internal Sales">Internal Sales</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>GL Account <span class="req">*</span></label>
+          <select id="reg-gl" onchange="onGLChange()">
+            <option value="">-- 선택 --</option>
+            <option value="120210 Computersoftware" data-cls="210100 Computer software" data-months="36 Month" data-kr="무형자산" data-account="컴퓨터소프트웨어">120210 Computersoftware</option>
+<option value="120110 TechnicalEquipment-Office&W/H" data-cls="241000 Technical Equipment - Office & W/H" data-months="72 Month" data-kr="유형자산" data-account="비품">120110 TechnicalEquipment-Office&W/H</option>
+<option value="120120 Fixturesandfittings" data-cls="222000 Fixtures and fittings" data-months="48 Month" data-kr="유형자산" data-account="비품">120120 Fixturesandfittings</option>
+<option value="120130 Fixtures&fittings_SSQ" data-cls="222010 Fixtures & fittings_SSQ" data-months="120 Month" data-kr="유형자산" data-account="비품">120130 Fixtures&fittings_SSQ</option>
+<option value="120140 OfficeFurniture&Equipment" data-cls="245020 Office Furniture & Equipment" data-months="180 Months" data-kr="유형자산" data-account="비품">120140 OfficeFurniture&Equipment</option>
+<option value="120150 Computerequipment" data-cls="245150 Computer equipment" data-months="36 Months" data-kr="유형자산" data-account="비품">120150 Computerequipment</option>
+<option value="120150 Computerequipment(onlyPC)" data-cls="246000 Computer equipment(only PC)" data-months="36 Months" data-kr="유형자산" data-account="비품">120150 Computerequipment(onlyPC)</option>
+<option value="120160 Companyvehicles" data-cls="248010 Company vehicles" data-months="72 Months" data-kr="유형자산" data-account="차량운반구">120160 Companyvehicles</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Asset Class <span class="auto-tag">자동</span></label>
+          <input type="text" id="reg-asset-class" readonly placeholder="GL 선택 시 자동 설정">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>GL Account (KR) <span class="auto-tag">자동</span></label>
+          <input type="text" id="reg-gl-kr" readonly placeholder="GL 선택 시 자동 설정">
+        </div>
+        <div class="form-group">
+          <label>Useful Life <span class="auto-tag">자동</span></label>
+          <input type="text" id="reg-useful-life" readonly placeholder="GL 선택 시 자동 설정">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location <span class="req">*</span></label>
+          <select id="reg-location" onchange="onLocationChange('reg')">
+            <option value="">-- 선택 --</option>
+            <option value="연천(Yeoncheon)" data-addr="703, Yangyeon-ro, Jeongok-eup, Yeoncheon-gun, Gyeonggi-do">연천(Yeoncheon)</option>
+<option value="트레이닝센터(Training Center)" data-addr="58, Gongse-ro, Giheung-gu, Yongin-si, Gyeonggi-do">트레이닝센터(Training Center)</option>
+<option value="양산(Yangsan)" data-addr="Hanjin CY, Yangsan ICD 6danji, 225, Jebang-ro, Mulgeum-eup, Yangsan-si, Gyeongsangnam-do">양산(Yangsan)</option>
+<option value="울산(Ulsan)" data-addr="58, Yeocheon-ro, Nam-gu, Ulsan">울산(Ulsan)</option>
+<option value="인천(Incheon)" data-addr="48, Jungbong-daero 68beon-gil, Dong-gu, Incheon">인천(Incheon)</option>
+<option value="광양(Gwangyang)" data-addr="256, Jecheol-ro, Gwangyang-eup, Gwangyang-si, Jeollanam-do">광양(Gwangyang)</option>
+<option value="광주(Gwangju)" data-addr="105, Pyeongdongsandan 3beon-ro, Gwangsan-gu, Gwangju">광주(Gwangju)</option>
+<option value="포항(Pohang)" data-addr="28, Cheolgangsandan-ro 34beon-gil, Daesong-myeon, Nam-gu, Pohang-si, Gyeongsangbuk-do">포항(Pohang)</option>
+<option value="TSC(TSC)" data-addr="232, Eumbong-ro, Eumbong-myeon, Asan-si, Chungcheongnam-do">TSC(TSC)</option>
+<option value="오산(Osan)" data-addr="552, Nambu-daero, Jinwi-myeon, Pyeongtaek-si, Gyeonggi-do">오산(Osan)</option>
+<option value="제천(Jecheon)" data-addr="48-13, Naeto-ro 14-gil, Jecheon-si, Chungcheongbuk-do">제천(Jecheon)</option>
+<option value="PDC(PDC)" data-addr="904-67, Gyeongchung-daero, Ganam-eup, Yeoju-si, Gyeonggi-do">PDC(PDC)</option>
+<option value="본사(SSQ)" data-addr="8F, 416, Hangang-daero, Jung-gu, Seoul">본사(SSQ)</option>
+<option value="강릉(Gangneung)" data-addr="2F, 10, Gangbyeon-ro 126beon-gil, Gangneung-si, Gangwon-do">강릉(Gangneung)</option>
+<option value="전주(Jeonju)" data-addr="430-1, Yongjiri, Geumgu-myeon, Gimje-si, Jeonbuk-do">전주(Jeonju)</option>
+<option value="청주(Cheongju)" data-addr="1288-8, Yeoncheong-ro, Nami-myeon, Seowon-gu, Cheongju-si, Chungcheongbuk-do">청주(Cheongju)</option>
+<option value="신항(Sinhang)" data-addr="52, Angol-ro, Jinhae-gu, Changwon-si, Gyeongsangnam-do">신항(Sinhang)</option>
+<option value="함안(Haman)" data-addr="4, Jangji 4-gil, Gunbuk-myeon, Haman-gun, Gyeongsangnam-do">함안(Haman)</option>
+<option value="직접입력">직접입력</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>직접입력 주소 (직접입력 선택 시)</label>
+          <input type="text" id="reg-location-manual" placeholder="정확한 주소를 입력해주세요" disabled>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Asset Value Total KRW <span class="req">*</span></label>
+          <input type="number" id="reg-asset-value" placeholder="부가세 제외 총 자산구입비용">
+        </div>
+        <div class="form-group">
+          <label>Vendor Code / Name <span class="req">*</span></label>
+          <input type="text" id="reg-vendor" placeholder="예: KR830109 / POLYMER COMPOSITE ASIA">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Model / Serial Number <span id="reg-serial-req" style="display:none" class="req">* (PC의 경우 필수)</span></label>
+          <input type="text" id="reg-serial" placeholder="GL Account가 120150 PC인 경우 필수">
+        </div>
+      </div>
+
+      <div class="section-title">2. 신청사유 (Purpose of Request)</div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>신청사유 <span class="req">*</span></label>
+          <textarea id="reg-purpose" placeholder="신청 배경 및 필요성을 구체적으로 기재해주세요"></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">3. 결재자 지정</div>
+      <div class="appr-block">
+        <div class="appr-title">1차 결재자</div>
+        <div class="appr-grid">
+          <select id="reg-a1-dept" onchange="onDeptChange(1,'reg')"><option value="">부서</option></select>
+          <select id="reg-a1-team" onchange="onTeamChange(1,'reg')" disabled><option value="">팀</option></select>
+          <select id="reg-a1-person" onchange="onPersonChange(1,'reg')" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="reg-a1-name" readonly placeholder="이름" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+          <input type="email" id="reg-a1-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">2차 결재자</div>
+        <div class="appr-grid">
+          <select id="reg-a2-dept" onchange="onDeptChange(2,'reg')"><option value="">부서</option></select>
+          <select id="reg-a2-team" onchange="onTeamChange(2,'reg')" disabled><option value="">팀</option></select>
+          <select id="reg-a2-person" onchange="onPersonChange(2,'reg')" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="reg-a2-name" readonly placeholder="이름" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+          <input type="email" id="reg-a2-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">회계담당자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" id="reg-a3-name" readonly value="Sora Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" id="reg-a3-email" readonly value="sora.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
+
+      <div class="section-title">4. 첨부파일</div>
+      <div class="file-area" onclick="document.getElementById('reg-file-input').click()">
+        <input type="file" id="reg-file-input" multiple onchange="onFileSelect(event,'reg')">
+        <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
+      </div>
+      <div class="file-list" id="reg-file-list"></div>
+      <div id="reg-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="resetRegForm()">초기화</button>
+        <button class="btn-primary" onclick="submitRequest('Registration')">상신</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== FA DISPOSAL ========== -->
+  <div id="tab-disposal" style="display:none">
+    <div class="card">
+      <div class="card-title">고정자산처분/매각 (Fixed Asset Disposal, Resale Requisition)</div>
+
+      <div class="section-title">1. 처분 구분 선택 (Disposal Type)</div>
+      <div class="form-row three">
+        <div class="form-group">
+          <label>Submission Date <span class="req">*</span></label>
+          <input type="date" id="dis-submission-date">
+        </div>
+        <div class="form-group">
+          <label>Disposal / Resale Date <span class="req">*</span></label>
+          <input type="date" id="dis-disposal-date">
+        </div>
+        <div class="form-group">
+          <label>Location <span class="req">*</span></label>
+          <select id="dis-location" onchange="onLocationChange('dis')">
+            <option value="">-- 선택 --</option>
+            <option value="연천(Yeoncheon)" data-addr="703, Yangyeon-ro, Jeongok-eup, Yeoncheon-gun, Gyeonggi-do">연천(Yeoncheon)</option>
+<option value="트레이닝센터(Training Center)" data-addr="58, Gongse-ro, Giheung-gu, Yongin-si, Gyeonggi-do">트레이닝센터(Training Center)</option>
+<option value="양산(Yangsan)" data-addr="Hanjin CY, Yangsan ICD 6danji, 225, Jebang-ro, Mulgeum-eup, Yangsan-si, Gyeongsangnam-do">양산(Yangsan)</option>
+<option value="울산(Ulsan)" data-addr="58, Yeocheon-ro, Nam-gu, Ulsan">울산(Ulsan)</option>
+<option value="인천(Incheon)" data-addr="48, Jungbong-daero 68beon-gil, Dong-gu, Incheon">인천(Incheon)</option>
+<option value="광양(Gwangyang)" data-addr="256, Jecheol-ro, Gwangyang-eup, Gwangyang-si, Jeollanam-do">광양(Gwangyang)</option>
+<option value="광주(Gwangju)" data-addr="105, Pyeongdongsandan 3beon-ro, Gwangsan-gu, Gwangju">광주(Gwangju)</option>
+<option value="포항(Pohang)" data-addr="28, Cheolgangsandan-ro 34beon-gil, Daesong-myeon, Nam-gu, Pohang-si, Gyeongsangbuk-do">포항(Pohang)</option>
+<option value="TSC(TSC)" data-addr="232, Eumbong-ro, Eumbong-myeon, Asan-si, Chungcheongnam-do">TSC(TSC)</option>
+<option value="오산(Osan)" data-addr="552, Nambu-daero, Jinwi-myeon, Pyeongtaek-si, Gyeonggi-do">오산(Osan)</option>
+<option value="제천(Jecheon)" data-addr="48-13, Naeto-ro 14-gil, Jecheon-si, Chungcheongbuk-do">제천(Jecheon)</option>
+<option value="PDC(PDC)" data-addr="904-67, Gyeongchung-daero, Ganam-eup, Yeoju-si, Gyeonggi-do">PDC(PDC)</option>
+<option value="본사(SSQ)" data-addr="8F, 416, Hangang-daero, Jung-gu, Seoul">본사(SSQ)</option>
+<option value="강릉(Gangneung)" data-addr="2F, 10, Gangbyeon-ro 126beon-gil, Gangneung-si, Gangwon-do">강릉(Gangneung)</option>
+<option value="전주(Jeonju)" data-addr="430-1, Yongjiri, Geumgu-myeon, Gimje-si, Jeonbuk-do">전주(Jeonju)</option>
+<option value="청주(Cheongju)" data-addr="1288-8, Yeoncheong-ro, Nami-myeon, Seowon-gu, Cheongju-si, Chungcheongbuk-do">청주(Cheongju)</option>
+<option value="신항(Sinhang)" data-addr="52, Angol-ro, Jinhae-gu, Changwon-si, Gyeongsangnam-do">신항(Sinhang)</option>
+<option value="함안(Haman)" data-addr="4, Jangji 4-gil, Gunbuk-myeon, Haman-gun, Gyeongsangnam-do">함안(Haman)</option>
+<option value="직접입력">직접입력</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type <span class="req">*</span></label>
+          <select id="dis-type" onchange="onDisposalTypeChange()">
+            <option value="">-- 선택 --</option>
+            <option value="분실(Lost)">분실(Lost)</option>
+            <option value="미사용(No need to use)">미사용(No need to use)</option>
+            <option value="손상(Damaged)">손상(Damaged)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Selling Price (부가세 제외)</label>
+          <input type="number" id="dis-selling-price" placeholder="매각금액 (매각 시 입력)">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Reason of Loss / Damage <span class="req">*</span></label>
+          <textarea id="dis-reason" placeholder="최대한 상세하게 기재해주시기 바랍니다"></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">2. 처분할 자산 리스트 (List of Assets for Disposal)</div>
+      <div style="font-size:11px;color:#605e5c;margin-bottom:8px">※ 5개 이상인 경우 대표 5개만 입력 후 첨부파일로 전체 리스트를 첨부해주세요.</div>
+      <div style="display:grid;grid-template-columns:40px 2fr 2fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr;gap:6px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
+        <span>No</span><span>Asset Code</span><span>Description</span><span>Cap.Date</span><span>CCTR</span><span>Acq.Cost</span><span>Acc.Depr.</span><span>NBV</span>
+      </div>
+      <div id="dis-asset-rows"></div>
+
+      <div class="section-title">3. 추가 비용/수익 (Additional Cost/Revenue)</div>
+      <div style="display:grid;grid-template-columns:50px 1.5fr 2fr 2fr 1.5fr 1.2fr 1.2fr 1.2fr;gap:6px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
+        <span>C/R</span><span>구분</span><span>BP Code/Name</span><span>사유</span><span>CCTR</span><span>Currency</span><span>환율</span><span>금액(FC)</span>
+      </div>
+      <div id="dis-cost-rows"></div>
+      <button class="btn-secondary" style="font-size:12px;padding:4px 12px;margin-top:6px" onclick="addCostRow()">+ 행 추가</button>
+
+      <div class="section-title">4. 결재자 지정</div>
+      <div class="appr-block">
+        <div class="appr-title">1차 결재자</div>
+        <div class="appr-grid">
+          <select id="dis-a1-dept" onchange="onDeptChange(1,'dis')"><option value="">부서</option></select>
+          <select id="dis-a1-team" onchange="onTeamChange(1,'dis')" disabled><option value="">팀</option></select>
+          <select id="dis-a1-person" onchange="onPersonChange(1,'dis')" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="dis-a1-name" readonly placeholder="이름" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+          <input type="email" id="dis-a1-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">2차 결재자</div>
+        <div class="appr-grid">
+          <select id="dis-a2-dept" onchange="onDeptChange(2,'dis')"><option value="">부서</option></select>
+          <select id="dis-a2-team" onchange="onTeamChange(2,'dis')" disabled><option value="">팀</option></select>
+          <select id="dis-a2-person" onchange="onPersonChange(2,'dis')" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="dis-a2-name" readonly placeholder="이름" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+          <input type="email" id="dis-a2-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">회계담당자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" readonly value="Sora Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="sora.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
+
+      <div class="section-title">5. 첨부파일</div>
+      <div class="file-area" onclick="document.getElementById('dis-file-input').click()">
+        <input type="file" id="dis-file-input" multiple onchange="onFileSelect(event,'dis')">
+        <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
+      </div>
+      <div class="file-list" id="dis-file-list"></div>
+      <div id="dis-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="resetDisposalForm()">초기화</button>
+        <button class="btn-primary" onclick="submitRequest('Disposal')">상신</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== FA TRANSFER ========== -->
+  <div id="tab-transfer" style="display:none">
+    <div class="card">
+      <div class="card-title">고정자산 이동 요청서 (Fixed Asset Internal Transfer Requisition)</div>
+
+      <div class="section-title">1. 이동 부서정보 (CCTR/Location for Transfer)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Submission Date <span class="req">*</span></label>
+          <input type="date" id="tfr-submission-date">
+        </div>
+        <div class="form-group">
+          <label>Transfer Date <span class="req">*</span></label>
+          <input type="date" id="tfr-transfer-date">
+        </div>
+      </div>
+      <div class="form-row four">
+        <div class="form-group">
+          <label>Transfer-out Team <span class="req">*</span></label>
+          <input type="text" id="tfr-out-team" placeholder="이동 전 팀명">
+        </div>
+        <div class="form-group">
+          <label>Previous CCTR <span class="req">*</span></label>
+          <select id="tfr-prev-cctr">
+            <option value="">-- 선택 --</option>
+            <option value="(47900704) RD Office">(47900704) RD Office [RD Office]</option>
+<option value="(47900705) CEO Office">(47900705) CEO Office [CEO Office]</option>
+<option value="(47900715) HR">(47900715) HR [HR]</option>
+<option value="(47900708) Compliance">(47900708) Compliance [Legal & Compliance]</option>
+<option value="(47926134) PMM Head Office">(47926134) PMM Head Office [PMM]</option>
+<option value="(47926145) Homologation">(47926145) Homologation [Delivery & Homologation]</option>
+<option value="(47925185) Delivery Center">(47925185) Delivery Center [Delivery & Homologation]</option>
+<option value="(47926135) Product Management">(47926135) Product Management [Product Management]</option>
+<option value="(47920205) Sales Training">(47920205) Sales Training [Product Management]</option>
+<option value="(47925155) Marketing& Communication">(47925155) Marketing& Communication [Marketing& Communication]</option>
+<option value="(47926114) Sales Head Office">(47926114) Sales Head Office [Sales]</option>
+<option value="(47926115) Sales Planning & Operation">(47926115) Sales Planning & Operation [Sales Planning & Operation]</option>
+<option value="(47927165) Bodybuilder/Fleet Sales">(47927165) Bodybuilder/Fleet Sales [BBM/Special Truck]</option>
+<option value="(47927115) Unimog Sales">(47927115) Unimog Sales [BBM/Special Truck]</option>
+<option value="(47941115) STK Field Seoul">(47941115) STK Field Seoul [STK Field Seoul]</option>
+<option value="(47928115) STK Field Busan">(47928115) STK Field Busan [STK Field Busan]</option>
+<option value="(47920115) STK Field Gwangju">(47920115) STK Field Gwangju [STK Field Gwangju]</option>
+<option value="(47910115) STK Field Jecheon">(47910115) STK Field Jecheon [STK Field Jecheon]</option>
+<option value="(47953305) CSP Head Office">(47953305) CSP Head Office [CSP]</option>
+<option value="(47955405) Technical Operation">(47955405) Technical Operation [Technical Operation]</option>
+<option value="(47954405) Unimog CSP">(47954405) Unimog CSP [Technical Operation]</option>
+<option value="(47950466) Technical Training">(47950466) Technical Training [Technical Operation]</option>
+<option value="(47954325) Parts OP & Logistics">(47954325) Parts OP & Logistics [Parts OP & Logistics]</option>
+<option value="(47954345) Parts Performance">(47954345) Parts Performance [Parts OP & Logistics]</option>
+<option value="(47954415) CRM & Call Center">(47954415) CRM & Call Center [Service & Network]</option>
+<option value="(47920765) Service & Network">(47920765) Service & Network [Service & Network]</option>
+<option value="(47954455) District Management">(47954455) District Management [Service & Network]</option>
+<option value="(47954435) Warranty">(47954435) Warranty [Service & Network]</option>
+<option value="(47900706) CFO Office">(47900706) CFO Office [F&C]</option>
+<option value="(47900825) Procurement">(47900825) Procurement [Procurement]</option>
+<option value="(47900776) Accounting">(47900776) Accounting [Accounting]</option>
+<option value="(47900775) Controlling">(47900775) Controlling [Controlling]</option>
+<option value="(47900745) IT Application">(47900745) IT Application [IT]</option>
+<option value="(47900755) IT Infrastructure">(47900755) IT Infrastructure [IT]</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Previous Location <span class="req">*</span></label>
+          <select id="tfr-prev-location" onchange="onLocationChange('tfr-prev')">
+            <option value="">-- 선택 --</option>
+            <option value="연천(Yeoncheon)" data-addr="703, Yangyeon-ro, Jeongok-eup, Yeoncheon-gun, Gyeonggi-do">연천(Yeoncheon)</option>
+<option value="트레이닝센터(Training Center)" data-addr="58, Gongse-ro, Giheung-gu, Yongin-si, Gyeonggi-do">트레이닝센터(Training Center)</option>
+<option value="양산(Yangsan)" data-addr="Hanjin CY, Yangsan ICD 6danji, 225, Jebang-ro, Mulgeum-eup, Yangsan-si, Gyeongsangnam-do">양산(Yangsan)</option>
+<option value="울산(Ulsan)" data-addr="58, Yeocheon-ro, Nam-gu, Ulsan">울산(Ulsan)</option>
+<option value="인천(Incheon)" data-addr="48, Jungbong-daero 68beon-gil, Dong-gu, Incheon">인천(Incheon)</option>
+<option value="광양(Gwangyang)" data-addr="256, Jecheol-ro, Gwangyang-eup, Gwangyang-si, Jeollanam-do">광양(Gwangyang)</option>
+<option value="광주(Gwangju)" data-addr="105, Pyeongdongsandan 3beon-ro, Gwangsan-gu, Gwangju">광주(Gwangju)</option>
+<option value="포항(Pohang)" data-addr="28, Cheolgangsandan-ro 34beon-gil, Daesong-myeon, Nam-gu, Pohang-si, Gyeongsangbuk-do">포항(Pohang)</option>
+<option value="TSC(TSC)" data-addr="232, Eumbong-ro, Eumbong-myeon, Asan-si, Chungcheongnam-do">TSC(TSC)</option>
+<option value="오산(Osan)" data-addr="552, Nambu-daero, Jinwi-myeon, Pyeongtaek-si, Gyeonggi-do">오산(Osan)</option>
+<option value="제천(Jecheon)" data-addr="48-13, Naeto-ro 14-gil, Jecheon-si, Chungcheongbuk-do">제천(Jecheon)</option>
+<option value="PDC(PDC)" data-addr="904-67, Gyeongchung-daero, Ganam-eup, Yeoju-si, Gyeonggi-do">PDC(PDC)</option>
+<option value="본사(SSQ)" data-addr="8F, 416, Hangang-daero, Jung-gu, Seoul">본사(SSQ)</option>
+<option value="강릉(Gangneung)" data-addr="2F, 10, Gangbyeon-ro 126beon-gil, Gangneung-si, Gangwon-do">강릉(Gangneung)</option>
+<option value="전주(Jeonju)" data-addr="430-1, Yongjiri, Geumgu-myeon, Gimje-si, Jeonbuk-do">전주(Jeonju)</option>
+<option value="청주(Cheongju)" data-addr="1288-8, Yeoncheong-ro, Nami-myeon, Seowon-gu, Cheongju-si, Chungcheongbuk-do">청주(Cheongju)</option>
+<option value="신항(Sinhang)" data-addr="52, Angol-ro, Jinhae-gu, Changwon-si, Gyeongsangnam-do">신항(Sinhang)</option>
+<option value="함안(Haman)" data-addr="4, Jangji 4-gil, Gunbuk-myeon, Haman-gun, Gyeongsangnam-do">함안(Haman)</option>
+<option value="직접입력">직접입력</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>직접입력 주소</label>
+          <input type="text" id="tfr-prev-location-manual" disabled placeholder="직접입력 선택 시">
+        </div>
+      </div>
+      <div class="form-row four">
+        <div class="form-group">
+          <label>Transfer-in Team <span class="req">*</span></label>
+          <input type="text" id="tfr-in-team" placeholder="이동 후 팀명">
+        </div>
+        <div class="form-group">
+          <label>New CCTR <span class="req">*</span></label>
+          <select id="tfr-new-cctr">
+            <option value="">-- 선택 --</option>
+            <option value="(47900704) RD Office">(47900704) RD Office [RD Office]</option>
+<option value="(47900705) CEO Office">(47900705) CEO Office [CEO Office]</option>
+<option value="(47900715) HR">(47900715) HR [HR]</option>
+<option value="(47900708) Compliance">(47900708) Compliance [Legal & Compliance]</option>
+<option value="(47926134) PMM Head Office">(47926134) PMM Head Office [PMM]</option>
+<option value="(47926145) Homologation">(47926145) Homologation [Delivery & Homologation]</option>
+<option value="(47925185) Delivery Center">(47925185) Delivery Center [Delivery & Homologation]</option>
+<option value="(47926135) Product Management">(47926135) Product Management [Product Management]</option>
+<option value="(47920205) Sales Training">(47920205) Sales Training [Product Management]</option>
+<option value="(47925155) Marketing& Communication">(47925155) Marketing& Communication [Marketing& Communication]</option>
+<option value="(47926114) Sales Head Office">(47926114) Sales Head Office [Sales]</option>
+<option value="(47926115) Sales Planning & Operation">(47926115) Sales Planning & Operation [Sales Planning & Operation]</option>
+<option value="(47927165) Bodybuilder/Fleet Sales">(47927165) Bodybuilder/Fleet Sales [BBM/Special Truck]</option>
+<option value="(47927115) Unimog Sales">(47927115) Unimog Sales [BBM/Special Truck]</option>
+<option value="(47941115) STK Field Seoul">(47941115) STK Field Seoul [STK Field Seoul]</option>
+<option value="(47928115) STK Field Busan">(47928115) STK Field Busan [STK Field Busan]</option>
+<option value="(47920115) STK Field Gwangju">(47920115) STK Field Gwangju [STK Field Gwangju]</option>
+<option value="(47910115) STK Field Jecheon">(47910115) STK Field Jecheon [STK Field Jecheon]</option>
+<option value="(47953305) CSP Head Office">(47953305) CSP Head Office [CSP]</option>
+<option value="(47955405) Technical Operation">(47955405) Technical Operation [Technical Operation]</option>
+<option value="(47954405) Unimog CSP">(47954405) Unimog CSP [Technical Operation]</option>
+<option value="(47950466) Technical Training">(47950466) Technical Training [Technical Operation]</option>
+<option value="(47954325) Parts OP & Logistics">(47954325) Parts OP & Logistics [Parts OP & Logistics]</option>
+<option value="(47954345) Parts Performance">(47954345) Parts Performance [Parts OP & Logistics]</option>
+<option value="(47954415) CRM & Call Center">(47954415) CRM & Call Center [Service & Network]</option>
+<option value="(47920765) Service & Network">(47920765) Service & Network [Service & Network]</option>
+<option value="(47954455) District Management">(47954455) District Management [Service & Network]</option>
+<option value="(47954435) Warranty">(47954435) Warranty [Service & Network]</option>
+<option value="(47900706) CFO Office">(47900706) CFO Office [F&C]</option>
+<option value="(47900825) Procurement">(47900825) Procurement [Procurement]</option>
+<option value="(47900776) Accounting">(47900776) Accounting [Accounting]</option>
+<option value="(47900775) Controlling">(47900775) Controlling [Controlling]</option>
+<option value="(47900745) IT Application">(47900745) IT Application [IT]</option>
+<option value="(47900755) IT Infrastructure">(47900755) IT Infrastructure [IT]</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>New Location <span class="req">*</span></label>
+          <select id="tfr-new-location" onchange="onLocationChange('tfr-new')">
+            <option value="">-- 선택 --</option>
+            <option value="연천(Yeoncheon)" data-addr="703, Yangyeon-ro, Jeongok-eup, Yeoncheon-gun, Gyeonggi-do">연천(Yeoncheon)</option>
+<option value="트레이닝센터(Training Center)" data-addr="58, Gongse-ro, Giheung-gu, Yongin-si, Gyeonggi-do">트레이닝센터(Training Center)</option>
+<option value="양산(Yangsan)" data-addr="Hanjin CY, Yangsan ICD 6danji, 225, Jebang-ro, Mulgeum-eup, Yangsan-si, Gyeongsangnam-do">양산(Yangsan)</option>
+<option value="울산(Ulsan)" data-addr="58, Yeocheon-ro, Nam-gu, Ulsan">울산(Ulsan)</option>
+<option value="인천(Incheon)" data-addr="48, Jungbong-daero 68beon-gil, Dong-gu, Incheon">인천(Incheon)</option>
+<option value="광양(Gwangyang)" data-addr="256, Jecheol-ro, Gwangyang-eup, Gwangyang-si, Jeollanam-do">광양(Gwangyang)</option>
+<option value="광주(Gwangju)" data-addr="105, Pyeongdongsandan 3beon-ro, Gwangsan-gu, Gwangju">광주(Gwangju)</option>
+<option value="포항(Pohang)" data-addr="28, Cheolgangsandan-ro 34beon-gil, Daesong-myeon, Nam-gu, Pohang-si, Gyeongsangbuk-do">포항(Pohang)</option>
+<option value="TSC(TSC)" data-addr="232, Eumbong-ro, Eumbong-myeon, Asan-si, Chungcheongnam-do">TSC(TSC)</option>
+<option value="오산(Osan)" data-addr="552, Nambu-daero, Jinwi-myeon, Pyeongtaek-si, Gyeonggi-do">오산(Osan)</option>
+<option value="제천(Jecheon)" data-addr="48-13, Naeto-ro 14-gil, Jecheon-si, Chungcheongbuk-do">제천(Jecheon)</option>
+<option value="PDC(PDC)" data-addr="904-67, Gyeongchung-daero, Ganam-eup, Yeoju-si, Gyeonggi-do">PDC(PDC)</option>
+<option value="본사(SSQ)" data-addr="8F, 416, Hangang-daero, Jung-gu, Seoul">본사(SSQ)</option>
+<option value="강릉(Gangneung)" data-addr="2F, 10, Gangbyeon-ro 126beon-gil, Gangneung-si, Gangwon-do">강릉(Gangneung)</option>
+<option value="전주(Jeonju)" data-addr="430-1, Yongjiri, Geumgu-myeon, Gimje-si, Jeonbuk-do">전주(Jeonju)</option>
+<option value="청주(Cheongju)" data-addr="1288-8, Yeoncheong-ro, Nami-myeon, Seowon-gu, Cheongju-si, Chungcheongbuk-do">청주(Cheongju)</option>
+<option value="신항(Sinhang)" data-addr="52, Angol-ro, Jinhae-gu, Changwon-si, Gyeongsangnam-do">신항(Sinhang)</option>
+<option value="함안(Haman)" data-addr="4, Jangji 4-gil, Gunbuk-myeon, Haman-gun, Gyeongsangnam-do">함안(Haman)</option>
+<option value="직접입력">직접입력</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>직접입력 주소</label>
+          <input type="text" id="tfr-new-location-manual" disabled placeholder="직접입력 선택 시">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Reason of Transfer <span class="req">*</span></label>
+          <textarea id="tfr-reason" placeholder="최대한 상세하게 기재해주시기 바랍니다"></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">2. 이동할 자산 리스트 (List of Transfer Fixed Assets)</div>
+      <div style="display:grid;grid-template-columns:40px 2fr 3fr 1fr 2fr;gap:6px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
+        <span>No</span><span>Asset Code</span><span>Asset Description</span><span>Qty</span><span>Remark</span>
+      </div>
+      <div id="tfr-asset-rows"></div>
+
+      <div class="section-title">3. 결재자 지정</div>
+      <div class="appr-block">
+        <div class="appr-title">1차 결재자</div>
+        <div class="appr-grid">
+          <select id="tfr-a1-dept" onchange="onDeptChange(1,'tfr')"><option value="">부서</option></select>
+          <select id="tfr-a1-team" onchange="onTeamChange(1,'tfr')" disabled><option value="">팀</option></select>
+          <select id="tfr-a1-person" onchange="onPersonChange(1,'tfr')" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="tfr-a1-name" readonly placeholder="이름" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+          <input type="email" id="tfr-a1-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">2차 결재자</div>
+        <div class="appr-grid">
+          <select id="tfr-a2-dept" onchange="onDeptChange(2,'tfr')"><option value="">부서</option></select>
+          <select id="tfr-a2-team" onchange="onTeamChange(2,'tfr')" disabled><option value="">팀</option></select>
+          <select id="tfr-a2-person" onchange="onPersonChange(2,'tfr')" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="tfr-a2-name" readonly placeholder="이름" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+          <input type="email" id="tfr-a2-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">회계담당자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" readonly value="Sora Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="sora.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
+
+      <div class="section-title">4. 첨부파일</div>
+      <div class="file-area" onclick="document.getElementById('tfr-file-input').click()">
+        <input type="file" id="tfr-file-input" multiple onchange="onFileSelect(event,'tfr')">
+        <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
+      </div>
+      <div class="file-list" id="tfr-file-list"></div>
+      <div id="tfr-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="resetTransferForm()">초기화</button>
+        <button class="btn-primary" onclick="submitRequest('Transfer')">상신</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MY LIST ========== -->
+  <div id="tab-list" style="display:none">
+    <div class="card">
+      <div class="card-title">내 신청 목록</div>
+      <table class="list-table">
+        <thead><tr>
+          <th>번호</th><th>유형</th><th>제목</th><th>상태</th><th>신청일</th>
+        </tr></thead>
+        <tbody id="list-body"><tr><td colspan="5" style="text-align:center;padding:32px;color:#605e5c">불러오는 중...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== APPROVAL QUEUE ========== -->
+  <div id="tab-approval" style="display:none">
+    <div class="card">
+      <div class="card-title">결재 대기 목록</div>
+      <table class="list-table">
+        <thead><tr>
+          <th>신청번호</th><th>신청자</th><th>유형</th><th>제목</th><th>상태</th><th>신청일</th><th>처리</th>
+        </tr></thead>
+        <tbody id="appr-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">불러오는 중...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== ADMIN ========== -->
+  <div id="tab-admin" style="display:none">
+    <div class="card">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <select id="admin-filter-status" onchange="loadAdminList()" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px">
+          <option value="">전체 상태</option>
+          <option>대기</option><option>승인완료</option><option>반려</option>
+        </select>
+        <select id="admin-filter-type" onchange="loadAdminList()" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px">
+          <option value="">전체 유형</option>
+          <option>Registration</option><option>Disposal</option><option>Transfer</option>
+        </select>
+        <input type="text" id="admin-filter-search" oninput="loadAdminList()" placeholder="신청자 검색..." style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;width:180px">
+        <span id="admin-count" style="font-size:13px;color:#605e5c;margin-left:auto"></span>
+      </div>
+      <table class="list-table">
+        <thead><tr>
+          <th>번호</th><th>신청자</th><th>유형</th><th>제목</th><th>FA Code</th><th>상태</th><th>신청일</th>
+        </tr></thead>
+        <tbody id="admin-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">불러오는 중...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div id="detail-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title">신청 상세 내용</div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div id="loading"><div class="loading-box"><div class="spinner"></div><span>처리 중입니다...</span></div></div>
+
+<script>
+const CLIENT_ID = '432976c2-b43a-492e-8213-ece505fa1f51';
+const TENANT_ID = '19cab1f5-21f4-44df-8ac6-96d6ca595203';
+const SITE_PATH = 'startruckkorea.sharepoint.com:/sites/STK-DB:';
+const GRAPH = 'https://graph.microsoft.com/v1.0';
+const SCOPES = ['User.Read', 'Sites.ReadWrite.All', 'Files.ReadWrite.All'];
+const ADMIN_EMAILS = [
+  'jihyun.ma@hyosung.com',
+  'hyunju.gong@hyosung.com',
+  'sora.kim@hyosung.com',
+  'admin@corptb.onmicrosoft.com'
+];
+const FA_ACCOUNTANT = { name: 'Sora Kim', email: 'sora.kim@hyosung.com' };
+
+let msalApp = null, user = null, siteId = null;
+let regFiles = [], disFiles = [], tfrFiles = [];
+let employeeData = [];
+let allRequestsCache = [];
+
+// ── MSAL ──
+async function signIn() {
+  try {
+    if (window !== window.top) { window.open(window.location.href, '_blank'); return; }
+    const r = await msal.loginPopup({ scopes: SCOPES });
+    msal.setActiveAccount(r.account);
+    await boot(r.account);
+  } catch(e) {
+    showError(e.message);
+  }
+}
+function signOut() { msal.logoutRedirect(); }
+async function token() {
+  const r = await msal.acquireTokenSilent({ scopes: SCOPES, account: msal.getActiveAccount() });
+  return r.accessToken;
+}
+async function api(path, method='GET', body=null) {
+  const t = await token();
+  const opts = { method, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(GRAPH + path, opts);
+  if (!res.ok) throw new Error((await res.json()).error?.message || res.status);
+  return method === 'DELETE' ? null : res.json();
+}
+
+async function boot(account) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  user = account;
+  document.getElementById('user-name').textContent = account.name || account.username;
+  const site = await api('/sites/' + SITE_PATH);
+  siteId = site.id;
+  await loadEmployees();
+  initAllForms();
+  initAssetRows();
+  await checkApprover();
+  const isAdmin = ADMIN_EMAILS.map(e=>e.toLowerCase()).includes(user.username.toLowerCase());
+  document.getElementById('tab-admin-btn').style.display = isAdmin ? 'block' : 'none';
+  switchTab('reg');
+}
+
+// ── EMPLOYEES ──
+async function loadEmployees() {
+  try {
+    const drivesData = await api('/sites/' + siteId + '/drives');
+    const docDrive = drivesData.value.find(d => d.name === '문서') || drivesData.value[0];
+    const t = await token();
+    const res = await fetch(GRAPH + '/drives/' + docDrive.id + '/root:/Employee_GL.xlsx:/content', { headers: { Authorization: 'Bearer ' + t } });
+    if (!res.ok) throw new Error('Employee file not found');
+    const buf = await res.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws);
+    employeeData = rows.map(r => ({
+      fn: r['Function'] || '',
+      dept: r['Function'] || '',
+      team: r['팀(Team)'] || '',
+      cctrName: r['코스트센터 명(CCTR Name)'] || '',
+      cctr: r['코스트센터(Cost Center)'] || '',
+      nameKr: r['성함_한글'] || '',
+      name: r['Name_ENG'] || '',
+      email: r['EMail'] || r['email'] || ''
+    })).filter(r => r.email && r.name);
+  } catch(e) {
+    console.warn('Employee load failed, using fallback:', e.message);
+  }
+}
+
+// ── APPROVER DROPDOWNS ──
+function initAllForms() {
+  ['reg','dis','tfr'].forEach(prefix => {
+    const depts = [...new Set(employeeData.map(e => e.dept))].sort();
+    const sel = document.getElementById(prefix + '-a1-dept');
+    const sel2 = document.getElementById(prefix + '-a2-dept');
+    const opts = '<option value="">부서</option>' + depts.map(d => '<option value="' + d + '">' + d + '</option>').join('');
+    if (sel) sel.innerHTML = opts;
+    if (sel2) sel2.innerHTML = opts;
+  });
+  const today = new Date().toISOString().split('T')[0];
+  ['reg-submission-date','dis-submission-date','tfr-submission-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+}
+
+function onDeptChange(idx, prefix) {
+  const dept = document.getElementById(prefix + '-a' + idx + '-dept').value;
+  const teamSel = document.getElementById(prefix + '-a' + idx + '-team');
+  const personSel = document.getElementById(prefix + '-a' + idx + '-person');
+  document.getElementById(prefix + '-a' + idx + '-name').value = '';
+  document.getElementById(prefix + '-a' + idx + '-email').value = '';
+  const teams = [...new Set(employeeData.filter(e => e.dept === dept).map(e => e.team))].sort();
+  teamSel.innerHTML = '<option value="">팀</option>' + teams.map(t => '<option value="' + t + '">' + t + '</option>').join('');
+  teamSel.disabled = !dept;
+  personSel.innerHTML = '<option value="">직원 선택</option>';
+  personSel.disabled = true;
+}
+function onTeamChange(idx, prefix) {
+  const dept = document.getElementById(prefix + '-a' + idx + '-dept').value;
+  const team = document.getElementById(prefix + '-a' + idx + '-team').value;
+  const personSel = document.getElementById(prefix + '-a' + idx + '-person');
+  document.getElementById(prefix + '-a' + idx + '-name').value = '';
+  document.getElementById(prefix + '-a' + idx + '-email').value = '';
+  const persons = employeeData.filter(e => e.dept === dept && e.team === team);
+  personSel.innerHTML = '<option value="">직원 선택</option>' + persons.map(p => '<option value="' + p.email + '">' + p.name + ' (' + p.nameKr + ')</option>').join('');
+  personSel.disabled = !team;
+}
+function onPersonChange(idx, prefix) {
+  const email = document.getElementById(prefix + '-a' + idx + '-person').value;
+  const person = employeeData.find(e => e.email === email);
+  document.getElementById(prefix + '-a' + idx + '-name').value = person ? person.name : '';
+  document.getElementById(prefix + '-a' + idx + '-email').value = person ? person.email : '';
+}
+
+// ── GL AUTO-MAPPING ──
+const GL_MAP = [{"gl":"120210 Computersoftware","cls":"210100 Computer software","desc":"Computer software","months":"36 Month","kr":"무형자산","account":"컴퓨터소프트웨어"},{"gl":"120110 TechnicalEquipment-Office&W/H","cls":"241000 Technical Equipment - Office & W/H","desc":"Technical Equipment - Office & W/H","months":"72 Month","kr":"유형자산","account":"비품"},{"gl":"120120 Fixturesandfittings","cls":"222000 Fixtures and fittings","desc":"Fixtures and fittings","months":"48 Month","kr":"유형자산","account":"비품"},{"gl":"120130 Fixtures&fittings_SSQ","cls":"222010 Fixtures & fittings_SSQ","desc":"Fixtures & fittings_SSQ","months":"120 Month","kr":"유형자산","account":"비품"},{"gl":"120140 OfficeFurniture&Equipment","cls":"245020 Office Furniture & Equipment","desc":"Office Furniture & Equipment","months":"180 Months","kr":"유형자산","account":"비품"},{"gl":"120150 Computerequipment","cls":"245150 Computer equipment","desc":"Computer equipment","months":"36 Months","kr":"유형자산","account":"비품"},{"gl":"120150 Computerequipment(onlyPC)","cls":"246000 Computer equipment(only PC)","desc":"Computer equipment(only PC)","months":"36 Months","kr":"유형자산","account":"비품"},{"gl":"120160 Companyvehicles","cls":"248010 Company vehicles","desc":"Company vehicles","months":"72 Months","kr":"유형자산","account":"차량운반구"}];
+function onGLChange() {
+  const gl = document.getElementById('reg-gl').value;
+  const data = GL_MAP.find(g => g.gl === gl);
+  document.getElementById('reg-asset-class').value = data ? data.cls : '';
+  document.getElementById('reg-gl-kr').value = data ? (data.kr + ' - ' + data.account) : '';
+  document.getElementById('reg-useful-life').value = data ? data.months : '';
+  const isPC = gl.includes('onlyPC');
+  document.getElementById('reg-serial-req').style.display = isPC ? 'inline' : 'none';
+}
+
+// ── LOCATION ──
+function onLocationChange(prefix) {
+  const selId = prefix === 'reg' ? 'reg-location' : prefix === 'dis' ? 'dis-location' : prefix + '-location';
+  const manualId = prefix === 'reg' ? 'reg-location-manual' : prefix === 'dis' ? 'dis-location-manual' : prefix + '-location-manual';
+  const sel = document.getElementById(selId);
+  const manual = document.getElementById(manualId);
+  if (!sel || !manual) return;
+  const isDirect = sel.value === '직접입력';
+  manual.disabled = !isDirect;
+  if (!isDirect) manual.value = '';
+}
+
+// ── DISPOSAL TYPE ──
+function onDisposalTypeChange() {
+  const type = document.getElementById('dis-type').value;
+  // auto-notes based on type - just visual feedback
+}
+
+// ── ASSET / COST ROWS ──
+function initAssetRows() {
+  // Disposal asset rows
+  const disContainer = document.getElementById('dis-asset-rows');
+  disContainer.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    disContainer.innerHTML += `<div class="asset-row" id="dis-asset-${i}">
+      <span style="font-size:12px;color:#605e5c;text-align:center">${i}</span>
+      <input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px">
+      <input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px">
+      <input type="date" style="border:1px solid #d2d0ce;border-radius:4px">
+      <select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px"><option value="">CCTR</option><option value="(47900704) RD Office">(47900704) RD Office [RD Office]</option>
+<option value="(47900705) CEO Office">(47900705) CEO Office [CEO Office]</option>
+<option value="(47900715) HR">(47900715) HR [HR]</option>
+<option value="(47900708) Compliance">(47900708) Compliance [Legal & Compliance]</option>
+<option value="(47926134) PMM Head Office">(47926134) PMM Head Office [PMM]</option>
+<option value="(47926145) Homologation">(47926145) Homologation [Delivery & Homologation]</option>
+<option...</select>
+      <input type="number" placeholder="취득원가" style="border:1px solid #d2d0ce;border-radius:4px">
+      <input type="number" placeholder="감가상각" style="border:1px solid #d2d0ce;border-radius:4px">
+      <input type="number" placeholder="장부가액" readonly style="border:1px solid #d2d0ce;border-radius:4px;background:#f3f2f1">
+    </div>`;
+  }
+  // Cost rows
+  const costContainer = document.getElementById('dis-cost-rows');
+  costContainer.innerHTML = '';
+  for (let i = 0; i < 2; i++) addCostRow();
+
+  // Transfer asset rows
+  const tfrContainer = document.getElementById('tfr-asset-rows');
+  tfrContainer.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    tfrContainer.innerHTML += `<div style="display:grid;grid-template-columns:40px 2fr 3fr 1fr 2fr;gap:6px;margin-bottom:6px">
+      <span style="font-size:12px;color:#605e5c;text-align:center;padding-top:8px">${i}</span>
+      <input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">
+      <input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">
+      <input type="number" placeholder="수량" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">
+      <input type="text" placeholder="비고" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">
+    </div>`;
+  }
+}
+
+let costRowCount = 0;
+function addCostRow() {
+  costRowCount++;
+  const id = 'cost-row-' + costRowCount;
+  document.getElementById('dis-cost-rows').innerHTML += `<div class="cost-row" id="${id}">
+    <select style="border:1px solid #d2d0ce;border-radius:4px"><option value="C">C</option><option value="R">R</option></select>
+    <input type="text" placeholder="처분비용/매각금액" style="border:1px solid #d2d0ce;border-radius:4px">
+    <input type="text" placeholder="BP Code / Name" style="border:1px solid #d2d0ce;border-radius:4px">
+    <input type="text" placeholder="사유" style="border:1px solid #d2d0ce;border-radius:4px">
+    <select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px"><option value="">CCTR</option><option value="(47900704) RD Office">(47900704) RD Office [RD Office]</option>
+<option value="(47900705) CEO Office">(47900705) CEO Office [CEO Office]</option>
+<option value="(47900715) HR">(47900715) HR [HR]</option>
+<option value="(47900708) Compliance">(47900708) Compliance [Legal & Compliance]<...</select>
+    <select style="border:1px solid #d2d0ce;border-radius:4px"><option value="KRW">KRW</option>
+<option value="USD">USD</option>
+<option value="JPY">JPY</option>
+<option value="EUR">EUR</option>
+<option value="CNY">CNY</option>
+<option value="HKD">HKD</option>
+<option value="THB">THB</option>
+<option value="TWD">TWD</option>
+<option value="PHP">PHP</option>
+<option value="SGD">SGD</option>
+<option value="AUD">AUD</option>
+<option value="VND">VND</option>
+<option value="GBP">GBP</option>
+<option value="CAD">CAD</option>
+<option value="MYR">MYR</option>
+<option value="RUB">RUB</option>
+<option value="ZAR">ZAR</option>
+<option value="NOK">NOK</option>
+<option value="NZD">NZD</option>
+<option value="DKK">DKK</option>
+<option value="MXN">MXN</option>
+<option value="MNT">MNT</option>
+<option value="BHD">BHD</option>
+<option value="BDT">BDT</option>
+<option value="BRL">BRL</option>
+<option value="BND">BND</option>
+<option value="SAR">SAR</option>
+<option value="LKR">LKR</option>
+<option value="SEK">SEK</option>
+<option value="CHF">CHF</option>
+<option value="AED">AED</option>
+<option value="DZD">DZD</option>
+<option value="OMR">OMR</option>
+<option value="JOD">JOD</option>
+<option value="ILS">ILS</option>
+<option value="EGP">EGP</option>
+<option value="INR">INR</option>
+<option value="IDR">IDR</option>
+<option value="CZK">CZK</option>
+<option value="CLP">CLP</option>
+<option value="KZT">KZT</option>
+<option value="QAR">QAR</option>
+<option value="KES">KES</option>
+<option value="COP">COP</option>
+<option value="KWD">KWD</option>
+<option value="TZS">TZS</option>
+<option value="TRY">TRY</option>
+<option value="PKR">PKR</option>
+<option value="PLN">PLN</option>
+<option value="HUF">HUF</option>
+<option value="NPR">NPR</option>
+<option value="MOP">MOP</option>
+<option value="KHR">KHR</option>
+<option value="FJD">FJD</option>
+<option value="LYD">LYD</option>
+<option value="RON">RON</option>
+<option value="MMK">MMK</option>
+<option value="ETB">ETB</option>
+<option value="UZS">UZS</option></select>
+    <input type="number" placeholder="환율" style="border:1px solid #d2d0ce;border-radius:4px" value="1">
+    <input type="number" placeholder="금액(FC)" style="border:1px solid #d2d0ce;border-radius:4px">
+  </div>`;
+}
+
+// ── FILES ──
+function onFileSelect(e, prefix) {
+  const store = prefix === 'reg' ? regFiles : prefix === 'dis' ? disFiles : tfrFiles;
+  const newFiles = Array.from(e.target.files);
+  for (const f of newFiles) { if (!store.find(x => x.name === f.name)) store.push(f); }
+  const totalMB = store.reduce((s,f) => s + f.size, 0) / 1024 / 1024;
+  if (totalMB > 10) { alert('첨부파일 총 용량이 ' + totalMB.toFixed(1) + 'MB입니다. 10MB 이하로 첨부해주세요.'); store.length = 0; }
+  renderFiles(prefix);
+  document.getElementById(prefix + '-file-input').value = '';
+}
+function removeFile(prefix, i) {
+  const store = prefix === 'reg' ? regFiles : prefix === 'dis' ? disFiles : tfrFiles;
+  store.splice(i, 1); renderFiles(prefix);
+}
+function renderFiles(prefix) {
+  const store = prefix === 'reg' ? regFiles : prefix === 'dis' ? disFiles : tfrFiles;
+  const totalMB = store.reduce((s,f) => s + f.size, 0) / 1024 / 1024;
+  document.getElementById(prefix + '-file-list').innerHTML = store.map((f,i) =>
+    '<div class="file-item"><span>' + f.name + ' <span style="color:#605e5c">(' + (f.size/1024).toFixed(1) + ' KB)</span></span><button onclick="removeFile('' + prefix + '',' + i + ')">×</button></div>'
+  ).join('') + (store.length ? '<div style="font-size:11px;color:#605e5c;text-align:right;margin-top:4px">총 ' + totalMB.toFixed(1) + ' MB / 10 MB</div>' : '');
+}
+
+// ── TABS ──
+function switchTab(name) {
+  ['reg','disposal','transfer','list','approval','admin'].forEach((t,i) => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
+    const btn = document.getElementById('tab-' + t + '-btn');
+    if (btn) btn.classList.toggle('active', t === name);
+  });
+  if (name === 'list') { allRequestsCache = []; loadMyList(); }
+  if (name === 'approval') loadApprovalQueue();
+  if (name === 'admin') { allRequestsCache = []; loadAdminList(); }
+}
+
+// ── SUBMIT ──
+async function submitRequest(faType) {
+  const prefix = faType === 'Registration' ? 'reg' : faType === 'Disposal' ? 'dis' : 'tfr';
+  const files = prefix === 'reg' ? regFiles : prefix === 'dis' ? disFiles : tfrFiles;
+
+  // Basic validation
+  if (faType === 'Registration') {
+    if (!document.getElementById('reg-description').value.trim()) return alert('자산명을 입력해주세요.');
+    if (!document.getElementById('reg-cctr').value) return alert('원가부서(CCTR)를 선택해주세요.');
+    if (!document.getElementById('reg-gl').value) return alert('GL Account를 선택해주세요.');
+    if (!document.getElementById('reg-purpose').value.trim()) return alert('신청사유를 입력해주세요.');
+  } else if (faType === 'Disposal') {
+    if (!document.getElementById('dis-type').value) return alert('처분 유형을 선택해주세요.');
+    if (!document.getElementById('dis-reason').value.trim()) return alert('처분 사유를 입력해주세요.');
+  } else {
+    if (!document.getElementById('tfr-prev-cctr').value) return alert('이전 CCTR을 선택해주세요.');
+    if (!document.getElementById('tfr-new-cctr').value) return alert('새 CCTR을 선택해주세요.');
+    if (!document.getElementById('tfr-reason').value.trim()) return alert('이동 사유를 입력해주세요.');
+  }
+  if (!document.getElementById(prefix + '-a1-email').value) return alert('1차 결재자를 지정해주세요.');
+  if (!document.getElementById(prefix + '-a2-email').value) return alert('2차 결재자를 지정해주세요.');
+  if (!files.length) { document.getElementById(prefix + '-file-notice').style.display = 'block'; return; }
+
+  loading(true);
+  try {
+    // Build title & fields
+    let title = '', fields = {};
+    if (faType === 'Registration') {
+      const gl = document.getElementById('reg-gl').value;
+      title = 'FA-REG-' + document.getElementById('reg-description').value.trim().substring(0,20);
+      fields = {
+        Title: title, FAType: faType,
+        Description: document.getElementById('reg-description').value.trim(),
+        SubmissionDate: document.getElementById('reg-submission-date').value,
+        PONo: document.getElementById('reg-po-no').value,
+        AcquisitionDate: document.getElementById('reg-acquisition-date').value,
+        CCTR: document.getElementById('reg-cctr').value,
+        RequestType: document.getElementById('reg-type').value,
+        GLAccount: gl,
+        AssetClass: document.getElementById('reg-asset-class').value,
+        UsefulLife: document.getElementById('reg-useful-life').value,
+        Location: document.getElementById('reg-location').value,
+        LocationManual: document.getElementById('reg-location-manual').value,
+        AssetValue: document.getElementById('reg-asset-value').value,
+        VendorInfo: document.getElementById('reg-vendor').value,
+        SerialNumber: document.getElementById('reg-serial').value,
+        Purpose: document.getElementById('reg-purpose').value.trim(),
+        Status: '대기', RequesterEmail: user.username,
+        RequestDate: new Date().toISOString()
+      };
+    } else if (faType === 'Disposal') {
+      title = 'FA-DIS-' + new Date().toISOString().substring(0,10);
+      fields = {
+        Title: title, FAType: faType,
+        SubmissionDate: document.getElementById('dis-submission-date').value,
+        DisposalDate: document.getElementById('dis-disposal-date').value,
+        Location: document.getElementById('dis-location').value,
+        DisposalType: document.getElementById('dis-type').value,
+        SellingPrice: document.getElementById('dis-selling-price').value || '0',
+        Reason: document.getElementById('dis-reason').value.trim(),
+        Status: '대기', RequesterEmail: user.username,
+        RequestDate: new Date().toISOString()
+      };
+    } else {
+      title = 'FA-TFR-' + new Date().toISOString().substring(0,10);
+      fields = {
+        Title: title, FAType: faType,
+        SubmissionDate: document.getElementById('tfr-submission-date').value,
+        TransferDate: document.getElementById('tfr-transfer-date').value,
+        OutTeam: document.getElementById('tfr-out-team').value,
+        PrevCCTR: document.getElementById('tfr-prev-cctr').value,
+        PrevLocation: document.getElementById('tfr-prev-location').value,
+        InTeam: document.getElementById('tfr-in-team').value,
+        NewCCTR: document.getElementById('tfr-new-cctr').value,
+        NewLocation: document.getElementById('tfr-new-location').value,
+        Reason: document.getElementById('tfr-reason').value.trim(),
+        Status: '대기', RequesterEmail: user.username,
+        RequestDate: new Date().toISOString()
+      };
+    }
+
+    const item = await api('/sites/' + siteId + '/lists/FA_Requests/items', 'POST', { fields });
+    const reqId = item.id;
+
+    // Upload files
+    const fileLinks = [];
+    try {
+      const drivesData = await api('/sites/' + siteId + '/drives');
+      const drive = drivesData.value.find(d => d.name === 'AttachedFiles') || drivesData.value[0];
+      const t = await token();
+      for (const file of files) {
+        try {
+          const buf = await file.arrayBuffer();
+          const res = await fetch(
+            GRAPH + '/drives/' + drive.id + '/root:/FA_Requests_AttachedFiles/' + reqId + '/' + encodeURIComponent(file.name) + ':/content',
+            { method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' }, body: buf }
+          );
+          if (res.ok) { const u = await res.json(); fileLinks.push(file.name + '|' + (u.webUrl || '')); }
+        } catch(e) { console.warn('Upload error:', e); }
+      }
+    } catch(e) { console.warn('Drive error:', e); }
+    if (fileLinks.length) {
+      await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { AttachedFiles: fileLinks.join(';') } });
+    }
+
+    // Create approvals
+    const approvers = [
+      { name: document.getElementById(prefix + '-a1-name').value, email: document.getElementById(prefix + '-a1-email').value, role: '1차결재자', order: 1 },
+      { name: document.getElementById(prefix + '-a2-name').value, email: document.getElementById(prefix + '-a2-email').value, role: '2차결재자', order: 2 },
+      { name: FA_ACCOUNTANT.name, email: FA_ACCOUNTANT.email, role: '회계담당자', order: 3 },
+    ];
+    for (const a of approvers) {
+      await api('/sites/' + siteId + '/lists/FA_Approvals/items', 'POST', { fields: {
+        Title: reqId + '-' + a.order, RequestID: parseInt(reqId),
+        ApproverEmail: a.email, ApproverName: a.name,
+        ApproverRole: a.role, ApprovalOrder: a.order,
+        Status: a.order === 1 ? '대기' : '대기(잠김)'
+      }});
+    }
+    alert('상신이 완료되었습니다.');
+    if (faType === 'Registration') resetRegForm();
+    else if (faType === 'Disposal') resetDisposalForm();
+    else resetTransferForm();
+    switchTab('list');
+  } catch(e) { alert('오류: ' + e.message); }
+  finally { loading(false); }
+}
+
+// ── RESETS ──
+function resetRegForm() {
+  ['reg-description','reg-po-no','reg-acquisition-date','reg-cctr','reg-type','reg-gl','reg-asset-class','reg-gl-kr','reg-useful-life','reg-location','reg-location-manual','reg-asset-value','reg-vendor','reg-serial','reg-purpose'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = el.tagName === 'SELECT' ? '' : ''; }
+  });
+  document.getElementById('reg-submission-date').value = new Date().toISOString().split('T')[0];
+  regFiles = []; renderFiles('reg');
+  ['reg-a1','reg-a2'].forEach(p => {
+    document.getElementById(p + '-dept').value = '';
+    document.getElementById(p + '-name').value = '';
+    document.getElementById(p + '-email').value = '';
+  });
+}
+function resetDisposalForm() {
+  disFiles = []; renderFiles('dis');
+  initAssetRows();
+}
+function resetTransferForm() {
+  tfrFiles = []; renderFiles('tfr');
+  initAssetRows();
+}
+
+// ── LISTS ──
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+async function loadMyList() {
+  const tbody = document.getElementById('list-body');
+  try {
+    const data = await api('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500');
+    const mine = data.value
+      .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
+      .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
+    if (!mine.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#605e5c">신청 내역이 없습니다.</td></tr>'; return; }
+    tbody.innerHTML = mine.map(item => {
+      const f = item.fields;
+      return '<tr onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td><span class="badge badge-type">' + (f.FAType||'') + '</span></td><td>' + (f.Title||'') + '</td><td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>';
+    }).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+}
+
+async function checkApprover() {
+  if (!siteId) return;
+  try {
+    const data = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
+    const mine = data.value.filter(i =>
+      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
+    );
+    const badge = document.getElementById('appr-badge');
+    if (mine.length) { badge.textContent = mine.length; badge.style.display = 'inline'; }
+    else badge.style.display = 'none';
+  } catch(e) {}
+}
+
+async function loadApprovalQueue() {
+  const tbody = document.getElementById('appr-body');
+  try {
+    const data = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
+    const mine = data.value.filter(i =>
+      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
+    );
+    if (!mine.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>'; return; }
+    const rows = await Promise.all(mine.map(async item => {
+      const f = item.fields;
+      let rf = {};
+      try { const r = await api('/sites/' + siteId + '/lists/FA_Requests/items/' + f.RequestID + '?$expand=fields'); rf = r.fields; } catch(e) {}
+      return '<tr><td style="color:#0078d4;cursor:pointer" onclick="showDetail(' + f.RequestID + ')">' + f.RequestID + '</td><td>' + (rf.RequesterEmail||'') + '</td><td><span class="badge badge-type">' + (rf.FAType||'') + '</span></td><td>' + (rf.Title||'') + '</td><td><span class="badge badge-' + (rf.Status||'대기') + '">' + (rf.Status||'') + '</span></td><td>' + (rf.RequestDate ? fmtDate(rf.RequestDate) : '') + '</td><td onclick="event.stopPropagation()"><button class="btn-primary" style="padding:3px 10px;font-size:11px" onclick="processApproval(' + item.id + ','승인',' + f.RequestID + ','' + f.ApproverRole + '')">승인</button> <button class="btn-secondary" style="padding:3px 10px;font-size:11px" onclick="processApproval(' + item.id + ','반려',' + f.RequestID + ','' + f.ApproverRole + '')">반려</button></td></tr>';
+    }));
+    tbody.innerHTML = rows.join('');
+  } catch(e) {}
+}
+
+async function processApproval(apprId, action, reqId, role) {
+  const comment = prompt(action + ' 의견 (선택사항):');
+  if (comment === null) return;
+  loading(true);
+  try {
+    await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
+      fields: { Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }
+    });
+    if (action === '반려') {
+      await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
+    } else if (action === '승인' && role === '회계담당자') {
+      const faCode = prompt('최종 승인되었습니다. FA Code를 입력해주세요 (없으면 취소):');
+      const patchFields = { Status: '승인완료' };
+      if (faCode) patchFields.FACode = faCode;
+      await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: patchFields });
+    } else if (action === '승인') {
+      const all = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
+      const next = all.value.filter(i => i.fields.RequestID == reqId && i.fields.Status === '대기(잠김)').sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
+      if (next.length) await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
+    }
+    alert(action + ' 처리되었습니다.');
+    await loadApprovalQueue();
+    await checkApprover();
+  } catch(e) { alert('오류: ' + e.message); }
+  finally { loading(false); }
+}
+
+async function showDetail(requestId) {
+  loading(true);
+  try {
+    const r = await api('/sites/' + siteId + '/lists/FA_Requests/items/' + requestId + '?$expand=fields');
+    const f = r.fields;
+    let filesHtml = '<div style="font-size:13px;color:#605e5c">첨부파일 없음</div>';
+    if (f.AttachedFiles) {
+      filesHtml = f.AttachedFiles.split(';').map(entry => {
+        const pi = entry.indexOf('|');
+        if (pi === -1) return '';
+        const name = entry.slice(0, pi).trim();
+        let url = entry.slice(pi + 1).trim();
+        if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + ' (링크 없음)</div>';
+        return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
+      }).filter(Boolean).join('');
+    }
+    let apprHtml = '';
+    try {
+      const apprData = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
+      const apprList = apprData.value.filter(i => i.fields.RequestID == requestId).sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
+      if (apprList.length) {
+        const sc = { '대기':'#7d5700','승인':'#107c10','반려':'#a4262c','대기(잠김)':'#605e5c' };
+        apprHtml = '<div style="margin-top:14px;font-size:13px;font-weight:600;margin-bottom:8px">결재 이력</div>' +
+          apprList.map(a => {
+            const af = a.fields;
+            return '<div style="padding:7px 0;border-bottom:0.5px solid #edebe9;font-size:13px"><div style="display:flex;justify-content:space-between"><span style="font-weight:500">' + (af.ApproverRole||'') + ' — ' + (af.ApproverName||af.ApproverEmail||'') + '</span><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:500">' + (af.Status||'') + '</span></div>' + (af.ApprovalDate ? '<div style="color:#605e5c;font-size:11px">' + fmtDate(af.ApprovalDate) + '</div>' : '') + (af.Comment ? '<div style="margin-top:3px;background:#f3f2f1;border-radius:3px;padding:4px 7px;font-size:12px">' + af.Comment + '</div>' : '') + '</div>';
+          }).join('');
+      }
+    } catch(e) {}
+
+    const rows = [
+      ['신청번호', requestId], ['신청자', f.RequesterEmail||''], ['FA 유형', f.FAType||''],
+      ['제목', f.Title||''], ['상태', f.Status||''], ['신청일', f.RequestDate ? fmtDate(f.RequestDate) : ''],
+    ];
+    if (f.FAType === 'Registration') {
+      rows.push(['자산명', f.Description||''], ['GL Account', f.GLAccount||''], ['Asset Class', f.AssetClass||''],
+        ['원가부서(CCTR)', f.CCTR||''], ['Location', f.Location||''], ['자산가액(KRW)', f.AssetValue ? Number(f.AssetValue).toLocaleString() + ' 원' : ''],
+        ['Vendor', f.VendorInfo||''], ['신청사유', f.Purpose||''], ['FA Code', f.FACode||'-']);
+    } else if (f.FAType === 'Disposal') {
+      rows.push(['처분유형', f.DisposalType||''], ['처분사유', f.Reason||''], ['매각금액', f.SellingPrice ? Number(f.SellingPrice).toLocaleString() + ' 원' : '-']);
+    } else {
+      rows.push(['이전팀', f.OutTeam||''], ['이전CCTR', f.PrevCCTR||''], ['이전Location', f.PrevLocation||''],
+        ['이동팀', f.InTeam||''], ['새CCTR', f.NewCCTR||''], ['새Location', f.NewLocation||''], ['이동사유', f.Reason||'']);
+    }
+
+    document.getElementById('modal-content').innerHTML =
+      rows.map(([l,v]) => '<div class="modal-row"><div class="modal-label">' + l + '</div><div class="modal-value" style="white-space:pre-wrap">' + v + '</div></div>').join('') +
+      '<div style="margin-top:12px;font-size:13px;font-weight:600;margin-bottom:6px">첨부파일</div>' + filesHtml + apprHtml;
+
+    const modal = document.getElementById('detail-modal');
+    modal.style.display = 'flex';
+  } catch(e) { alert('상세 조회 오류: ' + e.message); }
+  finally { loading(false); }
+}
+
+let adminCache = [];
+async function loadAdminList() {
+  if (!siteId) return;
+  const tbody = document.getElementById('admin-body');
+  const filterStatus = document.getElementById('admin-filter-status').value;
+  const filterType = document.getElementById('admin-filter-type').value;
+  const filterSearch = (document.getElementById('admin-filter-search').value||'').toLowerCase();
+  try {
+    if (!adminCache.length) {
+      const data = await api('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500');
+      adminCache = data.value.sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
+    }
+    let items = adminCache;
+    if (filterStatus) items = items.filter(i => i.fields.Status === filterStatus);
+    if (filterType) items = items.filter(i => i.fields.FAType === filterType);
+    if (filterSearch) items = items.filter(i => (i.fields.RequesterEmail||'').toLowerCase().includes(filterSearch));
+    document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
+    tbody.innerHTML = items.map(item => {
+      const f = item.fields;
+      return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td>' + (f.RequesterEmail||'') + '</td><td><span class="badge badge-type">' + (f.FAType||'') + '</span></td><td>' + (f.Title||'') + '</td><td>' + (f.FACode||'-') + '</td><td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>';
+    }).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+}
+
+function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
+function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
+function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
+
+// ── INIT MSAL ──
+(async () => {
+  const msalInstance = await msal.PublicClientApplication.createPublicClientApplication({
+    auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/' + TENANT_ID, redirectUri: window.location.origin + window.location.pathname },
+    cache: { cacheLocation: 'localStorage' }
+  });
+  msalApp = msalInstance; msal = msalApp;
+  const btn = document.getElementById('btn-login');
+  const resp = await msal.handleRedirectPromise();
+  if (resp) { msal.setActiveAccount(resp.account); await boot(resp.account); return; }
+  const accounts = msal.getAllAccounts();
+  if (accounts.length) { msal.setActiveAccount(accounts[0]); await boot(accounts[0]); return; }
+  btn.disabled = false; btn.style.background = ''; btn.textContent = 'Microsoft 계정으로 로그인';
+})();
+</script>
+</body>
+</html>
