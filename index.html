@@ -82,9 +82,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .badge-반려 { background: #fde7e9; color: #a4262c; }
 .badge-type { background: #e8f4ff; color: #0078d4; }
 
-.asset-row { display: grid; grid-template-columns: 30px 1.2fr 1.2fr 1fr 1.5fr 1fr 1fr 1fr; gap: 4px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.asset-row { display: grid; grid-template-columns: 28px 1fr 1fr 90px 1.6fr 90px 90px 90px; gap: 4px; align-items: center; margin-bottom: 6px; font-size: 12px; }
 .asset-row input { padding: 5px 7px; font-size: 12px; }
-.cost-row { display: grid; grid-template-columns: 44px 1.2fr 1.5fr 1.2fr 1.8fr 80px 80px 100px; gap: 4px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.cost-row { display: grid; grid-template-columns: 40px 1fr 1.1fr 1fr 1.6fr 72px 72px 90px; gap: 4px; align-items: center; margin-bottom: 6px; font-size: 12px; }
 .cost-row input, .cost-row select { padding: 5px 7px; font-size: 12px; }
 
 #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 998; align-items: center; justify-content: center; }
@@ -427,16 +427,16 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">2. 처분할 자산 리스트 (List of Assets for Disposal)</div>
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">※ 5개 이상인 경우 대표 5개만 입력 후 첨부파일로 전체 리스트를 첨부해주세요.</div>
-      <div style="display:grid;grid-template-columns:40px 2fr 2fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr;gap:6px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
+      <div style="display:grid;grid-template-columns:28px 1fr 1fr 90px 1.6fr 90px 90px 90px;gap:4px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
         <span>No</span><span>Asset Code</span><span>Description</span><span>Cap.Date</span><span>CCTR</span><span>Acq.Cost</span><span>Acc.Depr.</span><span>NBV</span>
       </div>
-      <div id="dis-asset-rows"></div>
+      <div style="overflow-x:auto;width:100%"><div id="dis-asset-rows"></div></div>
 
       <div class="section-title">3. 추가 비용/수익 (Additional Cost/Revenue)</div>
-      <div style="display:grid;grid-template-columns:50px 1.5fr 2fr 2fr 1.5fr 1.2fr 1.2fr 1.2fr;gap:6px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
+      <div style="display:grid;grid-template-columns:40px 1fr 1.1fr 1fr 1.6fr 72px 72px 90px;gap:4px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
         <span>C/R</span><span>구분</span><span>BP Code/Name</span><span>사유</span><span>CCTR</span><span>Currency</span><span>환율</span><span>금액(FC)</span>
       </div>
-      <div id="dis-cost-rows"></div>
+      <div style="overflow-x:auto;width:100%"><div id="dis-cost-rows"></div></div>
       <button class="btn-secondary" style="font-size:12px;padding:4px 12px;margin-top:6px" onclick="addCostRow()">+ 행 추가</button>
 
       <div class="section-title">4. 결재자 지정</div>
