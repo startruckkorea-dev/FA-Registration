@@ -34,7 +34,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
 .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
-.form-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.form-row.four { grid-template-columns: 1fr 2fr 1.5fr 1.5fr; }
 .form-row.full { grid-template-columns: 1fr; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group label { font-size: 12px; font-weight: 500; color: #605e5c; }
@@ -82,9 +82,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .badge-반려 { background: #fde7e9; color: #a4262c; }
 .badge-type { background: #e8f4ff; color: #0078d4; }
 
-.asset-row { display: grid; grid-template-columns: 40px 2fr 2fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr 80px; gap: 6px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.asset-row { display: grid; grid-template-columns: 30px 1.2fr 1.2fr 1fr 1.5fr 1fr 1fr 1fr; gap: 4px; align-items: center; margin-bottom: 6px; font-size: 12px; }
 .asset-row input { padding: 5px 7px; font-size: 12px; }
-.cost-row { display: grid; grid-template-columns: 50px 1.5fr 2fr 2fr 1.5fr 1.2fr 1.2fr 1.2fr; gap: 6px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.cost-row { display: grid; grid-template-columns: 44px 1.2fr 1.5fr 1.2fr 1.8fr 80px 80px 100px; gap: 4px; align-items: center; margin-bottom: 6px; font-size: 12px; }
 .cost-row input, .cost-row select { padding: 5px 7px; font-size: 12px; }
 
 #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 998; align-items: center; justify-content: center; }
@@ -503,7 +503,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           <input type="date" id="tfr-transfer-date">
         </div>
       </div>
-      <div class="form-row four">
+      <div class="form-row">
         <div class="form-group">
           <label>Transfer-out Team <span class="req">*</span></label>
           <input type="text" id="tfr-out-team" placeholder="이동 전 팀명">
@@ -548,6 +548,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 <option value="(47900755) IT Infrastructure">(47900755) IT Infrastructure [IT]</option>
           </select>
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label>Previous Location <span class="req">*</span></label>
           <select id="tfr-prev-location" onchange="onLocationChange('tfr-prev')">
@@ -578,7 +580,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           <input type="text" id="tfr-prev-location-manual" disabled placeholder="직접입력 선택 시">
         </div>
       </div>
-      <div class="form-row four">
+      <div class="form-row">
         <div class="form-group">
           <label>Transfer-in Team <span class="req">*</span></label>
           <input type="text" id="tfr-in-team" placeholder="이동 후 팀명">
@@ -623,6 +625,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 <option value="(47900755) IT Infrastructure">(47900755) IT Infrastructure [IT]</option>
           </select>
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label>New Location <span class="req">*</span></label>
           <select id="tfr-new-location" onchange="onLocationChange('tfr-new')">
@@ -926,14 +930,37 @@ function onGLChange() {
 
 // ── LOCATION ──
 function onLocationChange(prefix) {
-  const selId = prefix === 'reg' ? 'reg-location' : prefix === 'dis' ? 'dis-location' : prefix + '-location';
-  const manualId = prefix === 'reg' ? 'reg-location-manual' : prefix === 'dis' ? 'dis-location-manual' : prefix + '-location-manual';
-  const sel = document.getElementById(selId);
-  const manual = document.getElementById(manualId);
-  if (!sel || !manual) return;
-  const isDirect = sel.value === '직접입력';
-  manual.disabled = !isDirect;
-  if (!isDirect) manual.value = '';
+  if (prefix === 'reg') {
+    const sel = document.getElementById('reg-location');
+    const manual = document.getElementById('reg-location-manual');
+    if (!sel || !manual) return;
+    const isDirect = sel.value === '직접입력';
+    manual.disabled = !isDirect;
+    if (!isDirect) manual.value = '';
+  } else if (prefix === 'dis') {
+    const sel = document.getElementById('dis-location');
+    const manual = document.getElementById('dis-location-manual');
+    if (!sel || !manual) return;
+    const isDirect = sel.value === '직접입력';
+    manual.disabled = !isDirect;
+    if (!isDirect) manual.value = '';
+  } else if (prefix === 'tfr-prev') {
+    const sel = document.getElementById('tfr-prev-location');
+    const row = document.getElementById('tfr-prev-manual-row');
+    const manual = document.getElementById('tfr-prev-location-manual');
+    if (!sel) return;
+    const isDirect = sel.value === '직접입력';
+    if (row) row.style.display = isDirect ? 'block' : 'none';
+    if (manual && !isDirect) manual.value = '';
+  } else if (prefix === 'tfr-new') {
+    const sel = document.getElementById('tfr-new-location');
+    const row = document.getElementById('tfr-new-manual-row');
+    const manual = document.getElementById('tfr-new-location-manual');
+    if (!sel) return;
+    const isDirect = sel.value === '직접입력';
+    if (row) row.style.display = isDirect ? 'block' : 'none';
+    if (manual && !isDirect) manual.value = '';
+  }
 }
 
 // ── DISPOSAL TYPE ──
