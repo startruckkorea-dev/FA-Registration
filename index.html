@@ -402,6 +402,22 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           <input type="number" id="dis-selling-price" placeholder="매각금액 (매각 시 입력)">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Disposal Method <span class="auto-tag">자동</span></label>
+          <select id="dis-method" style="background:#f3f2f1">
+            <option value="">Type 선택 시 자동 설정</option>
+            <option value="Immediate Disposal">Immediate Disposal</option>
+            <option value="Disposal">Disposal</option>
+            <option value="Non-Repairable">Non-Repairable</option>
+            <option value="Repairable">Repairable</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Est. Repair Cost (손상 시)</label>
+          <input type="number" id="dis-repair-cost" placeholder="수리비 예상 금액" disabled>
+        </div>
+      </div>
       <div class="form-row full">
         <div class="form-group">
           <label>Reason of Loss / Damage <span class="req">*</span></label>
@@ -761,6 +777,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 <div id="loading"><div class="loading-box"><div class="spinner"></div><span>처리 중입니다...</span></div></div>
 
 <script>
+// Pre-built option strings for use in dynamically created rows
+const CCTR_OPTIONS_HTML = '<option value="">CCTR</option>' + CCTR_DATA.map(c => '<option value="(' + c.code + ') ' + c.name + '">(' + c.code + ') ' + c.name + ' [' + c.team + ']</option>').join('');
+const CURRENCY_OPTIONS_HTML = ['KRW','USD','JPY','EUR','CNY','HKD','THB','TWD','PHP','SGD','AUD','VND','GBP','CAD','MYR','RUB','ZAR','NOK','NZD','DKK','MXN','MNT','BHD','BDT','BRL','BND','SAR','LKR','SEK','CHF','AED','DZD','OMR','JOD','ILS','EGP','INR','IDR','CZK','CLP','KZT','QAR','KES','COP','KWD','TZS','TRY','PKR','PLN','HUF','NPR','MOP','KHR','FJD','LYD','RON','MMK','ETB','UZS'].map(c => '<option value="' + c + '">' + c + '</option>').join('');
 const CLIENT_ID = '432976c2-b43a-492e-8213-ece505fa1f51';
 const TENANT_ID = '19cab1f5-21f4-44df-8ac6-96d6ca595203';
 const SITE_PATH = 'startruckkorea.sharepoint.com:/sites/STK-DB:';
@@ -920,7 +939,29 @@ function onLocationChange(prefix) {
 // ── DISPOSAL TYPE ──
 function onDisposalTypeChange() {
   const type = document.getElementById('dis-type').value;
-  // auto-notes based on type - just visual feedback
+  const methodSel = document.getElementById('dis-method');
+  const repairCost = document.getElementById('dis-repair-cost');
+
+  if (type === '분실(Lost)') {
+    methodSel.value = 'Immediate Disposal';
+    methodSel.style.background = '#fff4ce';
+    repairCost.disabled = true;
+    repairCost.value = '';
+  } else if (type === '미사용(No need to use)') {
+    methodSel.value = 'Disposal';
+    methodSel.style.background = '#fff4ce';
+    repairCost.disabled = true;
+    repairCost.value = '';
+  } else if (type === '손상(Damaged)') {
+    methodSel.value = 'Non-Repairable';
+    methodSel.style.background = '#fff4ce';
+    repairCost.disabled = false;
+  } else {
+    methodSel.value = '';
+    methodSel.style.background = '#f3f2f1';
+    repairCost.disabled = true;
+    repairCost.value = '';
+  }
 }
 
 // ── ASSET / COST ROWS ──
@@ -929,109 +970,60 @@ function initAssetRows() {
   const disContainer = document.getElementById('dis-asset-rows');
   disContainer.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
-    disContainer.innerHTML += `<div class="asset-row" id="dis-asset-${i}">
-      <span style="font-size:12px;color:#605e5c;text-align:center">${i}</span>
-      <input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px">
-      <input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px">
-      <input type="date" style="border:1px solid #d2d0ce;border-radius:4px">
-      <select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px"><option value="">CCTR</option>${CCTR_DATA.map(c => '<option value="(' + c.code + ') ' + c.name + '">(' + c.code + ') ' + c.name + ' [' + c.team + ']</option>').join('')}</select>
-      <input type="number" placeholder="취득원가" style="border:1px solid #d2d0ce;border-radius:4px">
-      <input type="number" placeholder="감가상각" style="border:1px solid #d2d0ce;border-radius:4px">
-      <input type="number" placeholder="장부가액" readonly style="border:1px solid #d2d0ce;border-radius:4px;background:#f3f2f1">
-    </div>`;
+    const row = document.createElement('div');
+    row.className = 'asset-row';
+    row.id = 'dis-asset-' + i;
+    row.innerHTML =
+      '<span style="font-size:12px;color:#605e5c;text-align:center;padding-top:6px">' + i + '</span>' +
+      '<input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+      '<input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+      '<input type="date" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+      '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px">' + CCTR_OPTIONS_HTML + '</select>' +
+      '<input type="number" placeholder="취득원가" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+      '<input type="number" placeholder="감가상각" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+      '<input type="number" placeholder="장부가액" readonly style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px;background:#f3f2f1">';
+    disContainer.appendChild(row);
   }
   // Cost rows
   const costContainer = document.getElementById('dis-cost-rows');
   costContainer.innerHTML = '';
+  costRowCount = 0;
   for (let i = 0; i < 2; i++) addCostRow();
 
   // Transfer asset rows
   const tfrContainer = document.getElementById('tfr-asset-rows');
   tfrContainer.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
-    tfrContainer.innerHTML += `<div style="display:grid;grid-template-columns:40px 2fr 3fr 1fr 2fr;gap:6px;margin-bottom:6px">
-      <span style="font-size:12px;color:#605e5c;text-align:center;padding-top:8px">${i}</span>
-      <input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">
-      <input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">
-      <input type="number" placeholder="수량" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">
-      <input type="text" placeholder="비고" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">
-    </div>`;
+    const trow = document.createElement('div');
+    trow.style.cssText = 'display:grid;grid-template-columns:40px 2fr 3fr 1fr 2fr;gap:6px;margin-bottom:6px';
+    trow.innerHTML =
+      '<span style="font-size:12px;color:#605e5c;text-align:center;padding-top:8px">' + i + '</span>' +
+      '<input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+      '<input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+      '<input type="number" placeholder="수량" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+      '<input type="text" placeholder="비고" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">';
+    tfrContainer.appendChild(trow);
   }
 }
 
 let costRowCount = 0;
 function addCostRow() {
   costRowCount++;
-  const id = 'cost-row-' + costRowCount;
-  document.getElementById('dis-cost-rows').innerHTML += `<div class="cost-row" id="${id}">
-    <select style="border:1px solid #d2d0ce;border-radius:4px"><option value="C">C</option><option value="R">R</option></select>
-    <input type="text" placeholder="처분비용/매각금액" style="border:1px solid #d2d0ce;border-radius:4px">
-    <input type="text" placeholder="BP Code / Name" style="border:1px solid #d2d0ce;border-radius:4px">
-    <input type="text" placeholder="사유" style="border:1px solid #d2d0ce;border-radius:4px">
-    <select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px"><option value="">CCTR</option>${CCTR_DATA.map(c => '<option value="(' + c.code + ') ' + c.name + '">(' + c.code + ') ' + c.name + ' [' + c.team + ']</option>').join('')}</select>
-    <select style="border:1px solid #d2d0ce;border-radius:4px"><option value="KRW">KRW</option>
-<option value="USD">USD</option>
-<option value="JPY">JPY</option>
-<option value="EUR">EUR</option>
-<option value="CNY">CNY</option>
-<option value="HKD">HKD</option>
-<option value="THB">THB</option>
-<option value="TWD">TWD</option>
-<option value="PHP">PHP</option>
-<option value="SGD">SGD</option>
-<option value="AUD">AUD</option>
-<option value="VND">VND</option>
-<option value="GBP">GBP</option>
-<option value="CAD">CAD</option>
-<option value="MYR">MYR</option>
-<option value="RUB">RUB</option>
-<option value="ZAR">ZAR</option>
-<option value="NOK">NOK</option>
-<option value="NZD">NZD</option>
-<option value="DKK">DKK</option>
-<option value="MXN">MXN</option>
-<option value="MNT">MNT</option>
-<option value="BHD">BHD</option>
-<option value="BDT">BDT</option>
-<option value="BRL">BRL</option>
-<option value="BND">BND</option>
-<option value="SAR">SAR</option>
-<option value="LKR">LKR</option>
-<option value="SEK">SEK</option>
-<option value="CHF">CHF</option>
-<option value="AED">AED</option>
-<option value="DZD">DZD</option>
-<option value="OMR">OMR</option>
-<option value="JOD">JOD</option>
-<option value="ILS">ILS</option>
-<option value="EGP">EGP</option>
-<option value="INR">INR</option>
-<option value="IDR">IDR</option>
-<option value="CZK">CZK</option>
-<option value="CLP">CLP</option>
-<option value="KZT">KZT</option>
-<option value="QAR">QAR</option>
-<option value="KES">KES</option>
-<option value="COP">COP</option>
-<option value="KWD">KWD</option>
-<option value="TZS">TZS</option>
-<option value="TRY">TRY</option>
-<option value="PKR">PKR</option>
-<option value="PLN">PLN</option>
-<option value="HUF">HUF</option>
-<option value="NPR">NPR</option>
-<option value="MOP">MOP</option>
-<option value="KHR">KHR</option>
-<option value="FJD">FJD</option>
-<option value="LYD">LYD</option>
-<option value="RON">RON</option>
-<option value="MMK">MMK</option>
-<option value="ETB">ETB</option>
-<option value="UZS">UZS</option></select>
-    <input type="number" placeholder="환율" style="border:1px solid #d2d0ce;border-radius:4px" value="1">
-    <input type="number" placeholder="금액(FC)" style="border:1px solid #d2d0ce;border-radius:4px">
-  </div>`;
+  const row = document.createElement('div');
+  row.className = 'cost-row';
+  row.id = 'cost-row-' + costRowCount;
+  row.innerHTML =
+    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 6px;font-size:12px"><option value="C">C</option><option value="R">R</option></select>' +
+    '<input type="text" placeholder="처분비용/매각금액" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+    '<input type="text" placeholder="BP Code / Name" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+    '<input type="text" placeholder="사유" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
+    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px">' + CCTR_OPTIONS_HTML + '</select>' +
+    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 6px;font-size:12px">' + CURRENCY_OPTIONS_HTML + '</select>' +
+    '<input type="number" placeholder="환율" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px" value="1">' +
+    '<input type="number" placeholder="금액(FC)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">';
+  document.getElementById('dis-cost-rows').appendChild(row);
 }
+
 
 // ── FILES ──
 function onFileSelect(e, prefix) {
