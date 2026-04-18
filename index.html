@@ -1522,10 +1522,13 @@ async function showDetail(requestId) {
         row('Reason of Loss / Damage', f.Reason, true);
 
       // 자산 리스트
-      if (f.AssetList) {
+      console.log('f.AssetList raw:', f.AssetList);
+    if (f.AssetList) {
         try {
           const rawAsset = f.AssetList.replace(/&quot;/g,'"').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'');
+          console.log('rawAsset after decode:', rawAsset);
           const assets = JSON.parse(rawAsset).filter(a => a.code || a.desc);
+          console.log('assets parsed:', assets);
           if (assets.length) {
             html += sec('2. 처분할 자산 리스트') +
               tbl(['Asset Code','Description','Cap.Date','CCTR','Acq.Cost','Acc.Depr.','NBV'],
@@ -1569,10 +1572,13 @@ async function showDetail(requestId) {
         row('이동 사유 (Reason)', f.Reason, true);
 
       // 자산 리스트 (Transfer용 - AssetList 재활용)
-      if (f.AssetList) {
+      console.log('f.AssetList raw:', f.AssetList);
+    if (f.AssetList) {
         try {
           const rawAsset = f.AssetList.replace(/&quot;/g,'"').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'');
+          console.log('rawAsset after decode:', rawAsset);
           const assets = JSON.parse(rawAsset).filter(a => a.code || a.desc);
+          console.log('assets parsed:', assets);
           if (assets.length) {
             html += sec('2. 이동할 자산 리스트') +
               tbl(['Asset Code','Description','Qty','Remark'],
