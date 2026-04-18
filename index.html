@@ -976,20 +976,20 @@ function onLocationChange(prefix) {
     if (!isDirect) manual.value = '';
   } else if (prefix === 'tfr-prev') {
     const sel = document.getElementById('tfr-prev-location');
-    const row = document.getElementById('tfr-prev-manual-row');
     const manual = document.getElementById('tfr-prev-location-manual');
-    if (!sel) return;
+    if (!sel || !manual) return;
     const isDirect = sel.value === '직접입력';
-    if (row) row.style.display = isDirect ? 'block' : 'none';
-    if (manual && !isDirect) manual.value = '';
+    manual.disabled = !isDirect;
+    manual.style.background = isDirect ? '#fff' : '#f3f2f1';
+    if (!isDirect) manual.value = '';
   } else if (prefix === 'tfr-new') {
     const sel = document.getElementById('tfr-new-location');
-    const row = document.getElementById('tfr-new-manual-row');
     const manual = document.getElementById('tfr-new-location-manual');
-    if (!sel) return;
+    if (!sel || !manual) return;
     const isDirect = sel.value === '직접입력';
-    if (row) row.style.display = isDirect ? 'block' : 'none';
-    if (manual && !isDirect) manual.value = '';
+    manual.disabled = !isDirect;
+    manual.style.background = isDirect ? '#fff' : '#f3f2f1';
+    if (!isDirect) manual.value = '';
   }
 }
 
