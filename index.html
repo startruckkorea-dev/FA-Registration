@@ -1166,14 +1166,37 @@ async function submitRequest(faType) {
       };
     } else if (faType === 'Disposal') {
       title = 'FA-DIS-' + new Date().toISOString().substring(0,10);
+      // Collect asset list rows
+      const assetRows = [];
+      const assetTrs = document.querySelectorAll('#dis-asset-rows tr');
+      assetTrs.forEach(tr => {
+        const inputs = tr.querySelectorAll('input');
+        if (inputs[0] && inputs[0].value.trim()) {
+          assetRows.push({ code: inputs[0].value, desc: inputs[1].value, date: inputs[2].value, cctr: inputs[3].value, acqCost: inputs[4].value, accDepr: inputs[5].value, nbv: inputs[6].value });
+        }
+      });
+      // Collect cost/revenue rows
+      const costRows = [];
+      const costTrs = document.querySelectorAll('#dis-cost-rows tr');
+      costTrs.forEach(tr => {
+        const sel = tr.querySelector('select');
+        const inputs = tr.querySelectorAll('input');
+        const currSel = tr.querySelectorAll('select')[1];
+        if (inputs[0] && inputs[0].value.trim()) {
+          costRows.push({ cr: sel ? sel.value : 'C', type: inputs[0].value, bp: inputs[1].value, reason: inputs[2].value, cctr: inputs[3].value, currency: currSel ? currSel.value : 'KRW', rate: inputs[4] ? inputs[4].value : '1', amount: inputs[5] ? inputs[5].value : '' });
+        }
+      });
       fields = {
         Title: title, FAType: faType,
         SubmissionDate: document.getElementById('dis-submission-date').value,
         DisposalDate: document.getElementById('dis-disposal-date').value,
         Location: document.getElementById('dis-location').value,
         DisposalType: document.getElementById('dis-type').value,
+        DisposalMethod: document.getElementById('dis-method') ? document.getElementById('dis-method').value : '',
         SellingPrice: document.getElementById('dis-selling-price').value || '0',
         Reason: document.getElementById('dis-reason').value.trim(),
+        AssetList: assetRows.length ? JSON.stringify(assetRows) : '',
+        CostRevenue: costRows.length ? JSON.stringify(costRows) : '',
         Status: '대기', RequesterEmail: user.username,
         RequestDate: new Date().toISOString()
       };
@@ -1383,14 +1406,53 @@ async function showDetail(requestId) {
         ['원가부서(CCTR)', f.CCTR||''], ['Location', f.Location||''], ['자산가액(KRW)', f.AssetValue ? Number(f.AssetValue).toLocaleString() + ' 원' : ''],
         ['Vendor', f.VendorInfo||''], ['신청사유', f.Purpose||''], ['FA Code', f.FACode||'-']);
     } else if (f.FAType === 'Disposal') {
-      rows.push(['처분유형', f.DisposalType||''], ['처분사유', f.Reason||''], ['매각금액', f.SellingPrice ? Number(f.SellingPrice).toLocaleString() + ' 원' : '-']);
+      rows.push(
+        ['처분유형 (Type)', f.DisposalType || '-'],
+        ['Disposal Method', f.DisposalMethod || '-'],
+        ['처분/매각일 (Date)', f.DisposalDate || '-'],
+        ['Location', f.Location || '-'],
+        ['매각금액 (Selling Price)', f.SellingPrice ? Number(f.SellingPrice).toLocaleString() + ' 원' : '-'],
+        ['처분사유 (Reason)', f.Reason || '-']
+      );
     } else {
       rows.push(['이전팀', f.OutTeam||''], ['이전CCTR', f.PrevCCTR||''], ['이전Location', f.PrevLocation||''],
         ['이동팀', f.InTeam||''], ['새CCTR', f.NewCCTR||''], ['새Location', f.NewLocation||''], ['이동사유', f.Reason||'']);
     }
 
+    // Build extra section for Disposal asset list
+    let extraHtml = '';
+    if (f.FAType === 'Disposal' && f.AssetList) {
+      try {
+        const assets = JSON.parse(f.AssetList);
+        if (assets && assets.length) {
+          extraHtml += '<div style="margin-top:14px;font-size:13px;font-weight:600;margin-bottom:8px">처분할 자산 리스트</div>';
+          extraHtml += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+          extraHtml += '<tr style="background:#f3f2f1"><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">Asset Code</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">Description</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">Cap.Date</th><th style="padding:5px 8px;text-align:right;border-bottom:1px solid #edebe9">Acq.Cost</th><th style="padding:5px 8px;text-align:right;border-bottom:1px solid #edebe9">Acc.Depr.</th><th style="padding:5px 8px;text-align:right;border-bottom:1px solid #edebe9">NBV</th></tr>';
+          assets.forEach(a => {
+            extraHtml += '<tr><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (a.code||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (a.desc||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (a.date||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;text-align:right">' + (a.acqCost ? Number(a.acqCost).toLocaleString() : '-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;text-align:right">' + (a.accDepr ? Number(a.accDepr).toLocaleString() : '-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;text-align:right">' + (a.nbv ? Number(a.nbv).toLocaleString() : '-') + '</td></tr>';
+          });
+          extraHtml += '</table>';
+        }
+      } catch(e) {}
+    }
+    if (f.FAType === 'Disposal' && f.CostRevenue) {
+      try {
+        const costs = JSON.parse(f.CostRevenue);
+        if (costs && costs.length) {
+          extraHtml += '<div style="margin-top:14px;font-size:13px;font-weight:600;margin-bottom:8px">추가 비용/수익</div>';
+          extraHtml += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+          extraHtml += '<tr style="background:#f3f2f1"><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">C/R</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">구분</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">BP Code/Name</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">CCTR</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">Currency</th><th style="padding:5px 8px;text-align:right;border-bottom:1px solid #edebe9">금액(FC)</th></tr>';
+          costs.forEach(c => {
+            extraHtml += '<tr><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.cr||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.type||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.bp||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.cctr||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.currency||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;text-align:right">' + (c.amount ? Number(c.amount).toLocaleString() : '-') + '</td></tr>';
+          });
+          extraHtml += '</table>';
+        }
+      } catch(e) {}
+    }
+
     document.getElementById('modal-content').innerHTML =
       rows.map(([l,v]) => '<div class="modal-row"><div class="modal-label">' + l + '</div><div class="modal-value" style="white-space:pre-wrap">' + v + '</div></div>').join('') +
+      extraHtml +
       '<div style="margin-top:12px;font-size:13px;font-weight:600;margin-bottom:6px">첨부파일</div>' + filesHtml + apprHtml;
 
     const modal = document.getElementById('detail-modal');
