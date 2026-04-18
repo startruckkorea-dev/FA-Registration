@@ -1646,11 +1646,11 @@ async function loadAdminList() {
   const filterType = document.getElementById('admin-filter-type').value;
   const filterSearch = (document.getElementById('admin-filter-search').value||'').toLowerCase();
   try {
-    if (!adminCache.length) {
+    if (!allRequestsCache.length) {
       const data = await api('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500');
-      adminCache = data.value.sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
+      allRequestsCache = data.value.sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     }
-    let items = adminCache;
+    let items = allRequestsCache;
     if (filterStatus) items = items.filter(i => i.fields.Status === filterStatus);
     if (filterType) items = items.filter(i => i.fields.FAType === filterType);
     if (filterSearch) items = items.filter(i => (i.fields.RequesterEmail||'').toLowerCase().includes(filterSearch));
