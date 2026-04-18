@@ -1525,7 +1525,20 @@ async function showDetail(requestId) {
       console.log('f.AssetList raw:', f.AssetList);
     if (f.AssetList) {
         try {
-          const rawAsset = f.AssetList.replace(/&quot;/g,'"').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'');
+          const rawAsset = f.AssetList
+            .replace(/<[^>]*>/g,'')  // remove HTML tags first
+            .replace(/&quot;/g,'"')
+            .replace(/&#34;/g,'"')
+            .replace(/&#58;/g,':')
+            .replace(/&#123;/g,'{')
+            .replace(/&#125;/g,'}')
+            .replace(/&#91;/g,'[')
+            .replace(/&#93;/g,']')
+            .replace(/&amp;/g,'&')
+            .replace(/&lt;/g,'<')
+            .replace(/&gt;/g,'>')
+            .replace(/&#[0-9]+;/g, m => String.fromCharCode(parseInt(m.slice(2,-1))))
+            .trim();
           console.log('rawAsset after decode:', rawAsset);
           const assets = JSON.parse(rawAsset).filter(a => a.code || a.desc);
           console.log('assets parsed:', assets);
@@ -1543,7 +1556,20 @@ async function showDetail(requestId) {
       // 추가 비용/수익
       if (f.CostRevenue) {
         try {
-          const rawCost = f.CostRevenue.replace(/&quot;/g,'"').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'');
+          const rawCost = f.CostRevenue
+            .replace(/<[^>]*>/g,'')
+            .replace(/&quot;/g,'"')
+            .replace(/&#34;/g,'"')
+            .replace(/&#58;/g,':')
+            .replace(/&#123;/g,'{')
+            .replace(/&#125;/g,'}')
+            .replace(/&#91;/g,'[')
+            .replace(/&#93;/g,']')
+            .replace(/&amp;/g,'&')
+            .replace(/&lt;/g,'<')
+            .replace(/&gt;/g,'>')
+            .replace(/&#[0-9]+;/g, m => String.fromCharCode(parseInt(m.slice(2,-1))))
+            .trim();
           const costs = JSON.parse(rawCost).filter(c => c.type || c.amount);
           if (costs.length) {
             html += sec('3. 추가 비용/수익') +
@@ -1575,7 +1601,20 @@ async function showDetail(requestId) {
       console.log('f.AssetList raw:', f.AssetList);
     if (f.AssetList) {
         try {
-          const rawAsset = f.AssetList.replace(/&quot;/g,'"').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'');
+          const rawAsset = f.AssetList
+            .replace(/<[^>]*>/g,'')  // remove HTML tags first
+            .replace(/&quot;/g,'"')
+            .replace(/&#34;/g,'"')
+            .replace(/&#58;/g,':')
+            .replace(/&#123;/g,'{')
+            .replace(/&#125;/g,'}')
+            .replace(/&#91;/g,'[')
+            .replace(/&#93;/g,']')
+            .replace(/&amp;/g,'&')
+            .replace(/&lt;/g,'<')
+            .replace(/&gt;/g,'>')
+            .replace(/&#[0-9]+;/g, m => String.fromCharCode(parseInt(m.slice(2,-1))))
+            .trim();
           console.log('rawAsset after decode:', rawAsset);
           const assets = JSON.parse(rawAsset).filter(a => a.code || a.desc);
           console.log('assets parsed:', assets);
