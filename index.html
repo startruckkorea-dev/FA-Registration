@@ -1524,7 +1524,8 @@ async function showDetail(requestId) {
       // 자산 리스트
       if (f.AssetList) {
         try {
-          const assets = JSON.parse(f.AssetList).filter(a => a.code);
+          const rawAsset = f.AssetList.replace(/&quot;/g,'"').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'');
+          const assets = JSON.parse(rawAsset).filter(a => a.code || a.desc);
           if (assets.length) {
             html += sec('2. 처분할 자산 리스트') +
               tbl(['Asset Code','Description','Cap.Date','CCTR','Acq.Cost','Acc.Depr.','NBV'],
@@ -1539,7 +1540,8 @@ async function showDetail(requestId) {
       // 추가 비용/수익
       if (f.CostRevenue) {
         try {
-          const costs = JSON.parse(f.CostRevenue).filter(c => c.type);
+          const rawCost = f.CostRevenue.replace(/&quot;/g,'"').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'');
+          const costs = JSON.parse(rawCost).filter(c => c.type || c.amount);
           if (costs.length) {
             html += sec('3. 추가 비용/수익') +
               tbl(['C/R','구분','BP Code/Name','사유','CCTR','Currency','환율','금액(FC)'],
@@ -1569,7 +1571,8 @@ async function showDetail(requestId) {
       // 자산 리스트 (Transfer용 - AssetList 재활용)
       if (f.AssetList) {
         try {
-          const assets = JSON.parse(f.AssetList).filter(a => a.code);
+          const rawAsset = f.AssetList.replace(/&quot;/g,'"').replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'');
+          const assets = JSON.parse(rawAsset).filter(a => a.code || a.desc);
           if (assets.length) {
             html += sec('2. 이동할 자산 리스트') +
               tbl(['Asset Code','Description','Qty','Remark'],
