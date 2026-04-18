@@ -82,9 +82,17 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .badge-반려 { background: #fde7e9; color: #a4262c; }
 .badge-type { background: #e8f4ff; color: #0078d4; }
 
-.asset-row { display: grid; grid-template-columns: 24px 1.1fr 1.1fr 95px 1.3fr 88px 88px 88px; gap: 5px; align-items: center; margin-bottom: 4px; font-size: 12px; }
+/* asset-row removed */
+
+.fa-table { width:100%; border-collapse:collapse; font-size:12px; }
+.fa-table th { background:#f3f2f1; padding:6px 8px; text-align:left; font-weight:600; color:#605e5c; border-bottom:2px solid #edebe9; white-space:nowrap; }
+.fa-table td { padding:4px 4px; border-bottom:1px solid #f3f2f1; vertical-align:middle; }
+.fa-table input, .fa-table select { width:100%; border:1px solid #d2d0ce; border-radius:4px; padding:5px 6px; font-size:12px; font-family:inherit; box-sizing:border-box; }
+.fa-table input[readonly] { background:#f3f2f1; color:#605e5c; }
+.fa-table td:first-child { text-align:center; color:#605e5c; font-weight:500; width:28px; }
+
 .asset-row input { padding: 5px 7px; font-size: 12px; }
-.cost-row { display: grid; grid-template-columns: 36px 1.1fr 1.2fr 0.9fr 1.3fr 70px 70px 88px; gap: 5px; align-items: center; margin-bottom: 4px; font-size: 12px; }
+/* cost-row removed */
 .cost-row input, .cost-row select { padding: 5px 7px; font-size: 12px; }
 
 #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 998; align-items: center; justify-content: center; }
@@ -427,24 +435,37 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">2. 처분할 자산 리스트 (List of Assets for Disposal)</div>
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">※ 5개 이상인 경우 대표 5개만 입력 후 첨부파일로 전체 리스트를 첨부해주세요.</div>
-      <div style="display:grid;grid-template-columns:28px 1fr 1fr 90px 1.6fr 90px 90px 90px;gap:4px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
-        <span>No</span><span>Asset Code</span><span>Description</span><span>Cap.Date</span><span>CCTR</span><span>Acq.Cost</span><span>Acc.Depr.</span><span>NBV</span>
+      <div style="overflow-x:auto">
+        <table class="fa-table">
+          <thead><tr>
+            <th style="width:32px">No</th>
+            <th style="min-width:110px">Asset Code</th>
+            <th style="min-width:120px">Description</th>
+            <th style="min-width:110px">Cap.Date</th>
+            <th style="min-width:160px">CCTR</th>
+            <th style="min-width:90px">Acq.Cost</th>
+            <th style="min-width:90px">Acc.Depr.</th>
+            <th style="min-width:90px">NBV</th>
+          </tr></thead>
+          <tbody id="dis-asset-rows"></tbody>
+        </table>
       </div>
-      <div style="overflow-x:auto;width:100%"><div id="dis-asset-rows"></div></div>
 
       <div class="section-title">3. 추가 비용/수익 (Additional Cost/Revenue)</div>
-      <div style="overflow-x:auto;width:100%">
-        <div class="cost-row" style="background:#f3f2f1;border-radius:4px;margin-bottom:6px">
-          <span style="font-size:11px;font-weight:600;color:#605e5c;text-align:center">C/R</span>
-          <span style="font-size:11px;font-weight:600;color:#605e5c">구분</span>
-          <span style="font-size:11px;font-weight:600;color:#605e5c">BP Code/Name</span>
-          <span style="font-size:11px;font-weight:600;color:#605e5c">사유</span>
-          <span style="font-size:11px;font-weight:600;color:#605e5c">CCTR</span>
-          <span style="font-size:11px;font-weight:600;color:#605e5c">Currency</span>
-          <span style="font-size:11px;font-weight:600;color:#605e5c">환율</span>
-          <span style="font-size:11px;font-weight:600;color:#605e5c">금액(FC)</span>
-        </div>
-        <div id="dis-cost-rows"></div>
+      <div style="overflow-x:auto">
+        <table class="fa-table">
+          <thead><tr>
+            <th style="width:44px">C/R</th>
+            <th style="min-width:110px">구분</th>
+            <th style="min-width:130px">BP Code/Name</th>
+            <th style="min-width:110px">사유</th>
+            <th style="min-width:160px">CCTR</th>
+            <th style="min-width:80px">Currency</th>
+            <th style="min-width:70px">환율</th>
+            <th style="min-width:90px">금액(FC)</th>
+          </tr></thead>
+          <tbody id="dis-cost-rows"></tbody>
+        </table>
       </div>
       <button class="btn-secondary" style="font-size:12px;padding:4px 12px;margin-top:6px" onclick="addCostRow()">+ 행 추가</button>
 
@@ -1002,28 +1023,30 @@ function onDisposalTypeChange() {
 
 // ── ASSET / COST ROWS ──
 function initAssetRows() {
-  const disContainer = document.getElementById('dis-asset-rows');
-  disContainer.innerHTML = '';
+  // Disposal asset rows → table rows
+  const disTbody = document.getElementById('dis-asset-rows');
+  disTbody.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
-    const row = document.createElement('div');
-    row.className = 'asset-row';
-    row.id = 'dis-asset-' + i;
-    row.innerHTML =
-      '<span style="font-size:12px;color:#605e5c;text-align:center;padding-top:6px">' + i + '</span>' +
-      '<input type="text" placeholder="xxxxxxxx" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-      '<input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-      '<input type="date" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-      '<input type="text" list="cctr-datalist" placeholder="CCTR 검색" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-      '<input type="number" placeholder="취득원가" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-      '<input type="number" placeholder="감가상각" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-      '<input type="number" placeholder="장부가액" readonly style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px;background:#f3f2f1">';
-    disContainer.appendChild(row);
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + i + '</td>' +
+      '<td><input type="text" placeholder="xxxxxxxx"></td>' +
+      '<td><input type="text" placeholder="자산 설명"></td>' +
+      '<td><input type="date"></td>' +
+      '<td><input type="text" list="cctr-datalist" placeholder="CCTR 검색"></td>' +
+      '<td><input type="number" placeholder="0"></td>' +
+      '<td><input type="number" placeholder="0"></td>' +
+      '<td><input type="number" placeholder="0" readonly></td>';
+    disTbody.appendChild(tr);
   }
-  const costContainer = document.getElementById('dis-cost-rows');
-  costContainer.innerHTML = '';
+
+  // Cost rows → table rows
+  const costTbody = document.getElementById('dis-cost-rows');
+  costTbody.innerHTML = '';
   costRowCount = 0;
   for (let i = 0; i < 2; i++) addCostRow();
 
+  // Transfer asset rows
   const tfrContainer = document.getElementById('tfr-asset-rows');
   tfrContainer.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
@@ -1042,19 +1065,18 @@ function initAssetRows() {
 let costRowCount = 0;
 function addCostRow() {
   costRowCount++;
-  const row = document.createElement('div');
-  row.className = 'cost-row';
-  row.id = 'cost-row-' + costRowCount;
-  row.innerHTML =
-    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 5px;font-size:12px"><option value="C">C</option><option value="R">R</option></select>' +
-    '<input type="text" placeholder="처분비용/매각금액" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-    '<input type="text" placeholder="BP Code / Name" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-    '<input type="text" placeholder="사유" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-    '<input type="text" list="cctr-datalist" placeholder="CCTR 검색" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
-    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 5px;font-size:11px">' + CURRENCY_OPTIONS_HTML + '</select>' +
-    '<input type="number" placeholder="환율" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px" value="1">' +
-    '<input type="number" placeholder="금액(FC)" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">';
-  document.getElementById('dis-cost-rows').appendChild(row);
+  const tr = document.createElement('tr');
+  tr.id = 'cost-row-' + costRowCount;
+  tr.innerHTML =
+    '<td><select style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 4px;font-size:12px"><option value="C">C</option><option value="R">R</option></select></td>' +
+    '<td><input type="text" placeholder="처분비용/매각금액"></td>' +
+    '<td><input type="text" placeholder="BP Code / Name"></td>' +
+    '<td><input type="text" placeholder="사유"></td>' +
+    '<td><input type="text" list="cctr-datalist" placeholder="CCTR 검색"></td>' +
+    '<td><select style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 2px;font-size:11px">' + CURRENCY_OPTIONS_HTML + '</select></td>' +
+    '<td><input type="number" value="1"></td>' +
+    '<td><input type="number" placeholder="0"></td>';
+  document.getElementById('dis-cost-rows').appendChild(tr);
 }
 
 
