@@ -1143,7 +1143,7 @@ async function submitRequest(faType) {
     let title = '', fields = {};
     if (faType === 'Registration') {
       const gl = document.getElementById('reg-gl').value;
-      title = 'FA-REG-' + document.getElementById('reg-description').value.trim().substring(0,20);
+      title = 'FA-REG-' + new Date().toISOString().substring(0,10);
       fields = {
         Title: title, FAType: faType,
         Description: document.getElementById('reg-description').value.trim(),
