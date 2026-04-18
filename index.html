@@ -1154,6 +1154,7 @@ async function submitRequest(faType) {
         RequestType: document.getElementById('reg-type').value,
         GLAccount: gl,
         AssetClass: document.getElementById('reg-asset-class').value,
+        GLAccountKR: document.getElementById('reg-gl-kr').value,
         UsefulLife: document.getElementById('reg-useful-life').value,
         Location: document.getElementById('reg-location').value,
         LocationManual: document.getElementById('reg-location-manual').value,
@@ -1202,6 +1203,14 @@ async function submitRequest(faType) {
       };
     } else {
       title = 'FA-TFR-' + new Date().toISOString().substring(0,10);
+      // Collect transfer asset rows
+      const tfrAssetRows = [];
+      document.querySelectorAll('#tfr-asset-rows div').forEach((row, i) => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs[0] && inputs[0].value.trim()) {
+          tfrAssetRows.push({ code: inputs[0].value, desc: inputs[1].value, qty: inputs[2].value, remark: inputs[3].value });
+        }
+      });
       fields = {
         Title: title, FAType: faType,
         SubmissionDate: document.getElementById('tfr-submission-date').value,
@@ -1213,6 +1222,7 @@ async function submitRequest(faType) {
         NewCCTR: document.getElementById('tfr-new-cctr').value,
         NewLocation: document.getElementById('tfr-new-location').value,
         Reason: document.getElementById('tfr-reason').value.trim(),
+        AssetList: tfrAssetRows.length ? JSON.stringify(tfrAssetRows) : '',
         Status: '대기', RequesterEmail: user.username,
         RequestDate: new Date().toISOString()
       };
@@ -1372,96 +1382,168 @@ async function showDetail(requestId) {
   try {
     const r = await api('/sites/' + siteId + '/lists/FA_Requests/items/' + requestId + '?$expand=fields');
     const f = r.fields;
+
+    // ── 헬퍼 ──
+    const sec = (title) => '<div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#1F4E79;padding:6px 10px;background:#EFF6FF;border-left:3px solid #1F4E79;border-radius:3px">' + title + '</div>';
+    const row = (label, value, full) => {
+      const v = (value === undefined || value === null || value === '') ? '-' : value;
+      return full
+        ? '<div style="padding:7px 0;border-bottom:0.5px solid #edebe9;font-size:13px"><div style="font-size:11px;color:#605e5c;margin-bottom:3px">' + label + '</div><div style="white-space:pre-wrap;color:#323130">' + v + '</div></div>'
+        : '<div class="modal-row"><div class="modal-label">' + label + '</div><div class="modal-value">' + v + '</div></div>';
+    };
+    const tbl = (headers, rows_data) => {
+      let h = '<div style="overflow-x:auto;margin-top:6px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>' +
+        headers.map(h => '<th style="padding:5px 8px;background:#f3f2f1;text-align:left;border-bottom:2px solid #edebe9;white-space:nowrap">' + h + '</th>').join('') + '</tr></thead><tbody>';
+      rows_data.forEach(cols => {
+        h += '<tr>' + cols.map((c,i) => '<td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;' + (i >= headers.length-3 ? 'text-align:right' : '') + '">' + (c||'-') + '</td>').join('') + '</tr>';
+      });
+      return h + '</tbody></table></div>';
+    };
+
+    // ── 첨부파일 ──
     let filesHtml = '<div style="font-size:13px;color:#605e5c">첨부파일 없음</div>';
     if (f.AttachedFiles) {
       filesHtml = f.AttachedFiles.split(';').map(entry => {
-        const pi = entry.indexOf('|');
-        if (pi === -1) return '';
+        const pi = entry.indexOf('|'); if (pi === -1) return '';
         const name = entry.slice(0, pi).trim();
         let url = entry.slice(pi + 1).trim();
         if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + ' (링크 없음)</div>';
         return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
       }).filter(Boolean).join('');
     }
+
+    // ── 결재 이력 ──
     let apprHtml = '';
     try {
       const apprData = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
       const apprList = apprData.value.filter(i => i.fields.RequestID == requestId).sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
       if (apprList.length) {
         const sc = { '대기':'#7d5700','승인':'#107c10','반려':'#a4262c','대기(잠김)':'#605e5c' };
-        apprHtml = '<div style="margin-top:14px;font-size:13px;font-weight:600;margin-bottom:8px">결재 이력</div>' +
+        apprHtml = sec('결재 이력') +
           apprList.map(a => {
             const af = a.fields;
-            return '<div style="padding:7px 0;border-bottom:0.5px solid #edebe9;font-size:13px"><div style="display:flex;justify-content:space-between"><span style="font-weight:500">' + (af.ApproverRole||'') + ' — ' + (af.ApproverName||af.ApproverEmail||'') + '</span><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:500">' + (af.Status||'') + '</span></div>' + (af.ApprovalDate ? '<div style="color:#605e5c;font-size:11px">' + fmtDate(af.ApprovalDate) + '</div>' : '') + (af.Comment ? '<div style="margin-top:3px;background:#f3f2f1;border-radius:3px;padding:4px 7px;font-size:12px">' + af.Comment + '</div>' : '') + '</div>';
+            return '<div style="padding:7px 0;border-bottom:0.5px solid #edebe9;font-size:13px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center">' +
+              '<span style="font-weight:500">' + (af.ApproverRole||'') + ' — ' + (af.ApproverName||af.ApproverEmail||'') + '</span>' +
+              '<span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:600;font-size:12px">' + (af.Status||'') + '</span></div>' +
+              (af.ApprovalDate ? '<div style="color:#605e5c;font-size:11px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
+              (af.Comment ? '<div style="margin-top:3px;background:#f3f2f1;border-radius:3px;padding:4px 7px;font-size:12px">💬 ' + af.Comment + '</div>' : '') +
+              '</div>';
           }).join('');
       }
     } catch(e) {}
 
-    const rows = [
-      ['신청번호', requestId], ['신청자', f.RequesterEmail||''], ['FA 유형', f.FAType||''],
-      ['제목', f.Title||''], ['상태', f.Status||''], ['신청일', f.RequestDate ? fmtDate(f.RequestDate) : ''],
-    ];
+    // ── 공통 헤더 ──
+    let html = sec('기본 정보') +
+      row('신청번호', requestId) +
+      row('신청자', f.RequesterEmail) +
+      row('FA 유형', '<span style="background:#e8f4ff;color:#0078d4;padding:2px 8px;border-radius:10px;font-size:12px">' + (f.FAType||'') + '</span>') +
+      row('제목', f.Title) +
+      row('상태', '<span style="font-weight:600;color:' + (f.Status==='승인완료'?'#107c10':f.Status==='반려'?'#a4262c':'#7d5700') + '">' + (f.Status||'') + '</span>') +
+      row('신청일', f.RequestDate ? fmtDate(f.RequestDate) : '') +
+      (f.FACode ? row('FA Code', '<strong style="color:#107c10">' + f.FACode + '</strong>') : '');
+
+    // ── Registration ──
     if (f.FAType === 'Registration') {
-      rows.push(['자산명', f.Description||''], ['GL Account', f.GLAccount||''], ['Asset Class', f.AssetClass||''],
-        ['원가부서(CCTR)', f.CCTR||''], ['Location', f.Location||''], ['자산가액(KRW)', f.AssetValue ? Number(f.AssetValue).toLocaleString() + ' 원' : ''],
-        ['Vendor', f.VendorInfo||''], ['신청사유', f.Purpose||''], ['FA Code', f.FACode||'-']);
+      html += sec('1. 고정자산 정보') +
+        row('자산명 (Description)', f.Description) +
+        row('Submission Date', f.SubmissionDate) +
+        row('PO No.', f.PONo) +
+        row('자산취득일 (Acquisition Date)', f.AcquisitionDate) +
+        row('원가부서 (CCTR)', f.CCTR) +
+        row('Type', f.RequestType) +
+        row('GL Account', f.GLAccount) +
+        row('Asset Class', f.AssetClass) +
+        row('GL Account (KR)', f.GLAccountKR) +
+        row('Useful Life', f.UsefulLife) +
+        row('Location', f.Location) +
+        (f.LocationManual ? row('직접입력 주소', f.LocationManual) : '') +
+        row('Asset Value Total KRW', f.AssetValue ? Number(f.AssetValue).toLocaleString() + ' 원' : '') +
+        row('Vendor Code / Name', f.VendorInfo) +
+        (f.SerialNumber ? row('Model / Serial Number', f.SerialNumber) : '') +
+        sec('2. 신청사유') +
+        row('신청사유 (Purpose)', f.Purpose, true);
+
+    // ── Disposal ──
     } else if (f.FAType === 'Disposal') {
-      rows.push(
-        ['처분유형 (Type)', f.DisposalType || '-'],
-        ['Disposal Method', f.DisposalMethod || '-'],
-        ['처분/매각일 (Date)', f.DisposalDate || '-'],
-        ['Location', f.Location || '-'],
-        ['매각금액 (Selling Price)', f.SellingPrice ? Number(f.SellingPrice).toLocaleString() + ' 원' : '-'],
-        ['처분사유 (Reason)', f.Reason || '-']
-      );
-    } else {
-      rows.push(['이전팀', f.OutTeam||''], ['이전CCTR', f.PrevCCTR||''], ['이전Location', f.PrevLocation||''],
-        ['이동팀', f.InTeam||''], ['새CCTR', f.NewCCTR||''], ['새Location', f.NewLocation||''], ['이동사유', f.Reason||'']);
+      html += sec('1. 처분 구분') +
+        row('Submission Date', f.SubmissionDate) +
+        row('Disposal / Resale Date', f.DisposalDate) +
+        row('Location', f.Location) +
+        row('Type', f.DisposalType) +
+        row('Disposal Method', f.DisposalMethod) +
+        row('Selling Price (부가세 제외)', f.SellingPrice ? Number(f.SellingPrice).toLocaleString() + ' 원' : '-') +
+        row('Reason of Loss / Damage', f.Reason, true);
+
+      // 자산 리스트
+      if (f.AssetList) {
+        try {
+          const assets = JSON.parse(f.AssetList).filter(a => a.code);
+          if (assets.length) {
+            html += sec('2. 처분할 자산 리스트') +
+              tbl(['Asset Code','Description','Cap.Date','CCTR','Acq.Cost','Acc.Depr.','NBV'],
+                assets.map(a => [a.code, a.desc, a.date, a.cctr,
+                  a.acqCost ? Number(a.acqCost).toLocaleString() : '-',
+                  a.accDepr ? Number(a.accDepr).toLocaleString() : '-',
+                  a.nbv ? Number(a.nbv).toLocaleString() : '-']));
+          }
+        } catch(e) {}
+      }
+
+      // 추가 비용/수익
+      if (f.CostRevenue) {
+        try {
+          const costs = JSON.parse(f.CostRevenue).filter(c => c.type);
+          if (costs.length) {
+            html += sec('3. 추가 비용/수익') +
+              tbl(['C/R','구분','BP Code/Name','사유','CCTR','Currency','환율','금액(FC)'],
+                costs.map(c => [c.cr, c.type, c.bp, c.reason, c.cctr, c.currency, c.rate,
+                  c.amount ? Number(c.amount).toLocaleString() : '-']));
+          }
+        } catch(e) {}
+      }
+
+    // ── Transfer ──
+    } else if (f.FAType === 'Transfer') {
+      html += sec('1. 이동 부서정보') +
+        row('Submission Date', f.SubmissionDate) +
+        row('Transfer Date', f.TransferDate) +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0">' +
+          '<div style="background:#FFF8F0;border-radius:6px;padding:10px">' +
+            '<div style="font-size:11px;font-weight:700;color:#605e5c;margin-bottom:8px">📤 이동 전 (Transfer-out)</div>' +
+            row('팀 (Team)', f.OutTeam) + row('CCTR', f.PrevCCTR) + row('Location', f.PrevLocation) +
+          '</div>' +
+          '<div style="background:#F0FFF4;border-radius:6px;padding:10px">' +
+            '<div style="font-size:11px;font-weight:700;color:#605e5c;margin-bottom:8px">📥 이동 후 (Transfer-in)</div>' +
+            row('팀 (Team)', f.InTeam) + row('CCTR', f.NewCCTR) + row('Location', f.NewLocation) +
+          '</div>' +
+        '</div>' +
+        row('이동 사유 (Reason)', f.Reason, true);
+
+      // 자산 리스트 (Transfer용 - AssetList 재활용)
+      if (f.AssetList) {
+        try {
+          const assets = JSON.parse(f.AssetList).filter(a => a.code);
+          if (assets.length) {
+            html += sec('2. 이동할 자산 리스트') +
+              tbl(['Asset Code','Description','Qty','Remark'],
+                assets.map(a => [a.code, a.desc, a.qty || '-', a.remark || '-']));
+          }
+        } catch(e) {}
+      }
     }
 
-    // Build extra section for Disposal asset list
-    let extraHtml = '';
-    if (f.FAType === 'Disposal' && f.AssetList) {
-      try {
-        const assets = JSON.parse(f.AssetList);
-        if (assets && assets.length) {
-          extraHtml += '<div style="margin-top:14px;font-size:13px;font-weight:600;margin-bottom:8px">처분할 자산 리스트</div>';
-          extraHtml += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
-          extraHtml += '<tr style="background:#f3f2f1"><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">Asset Code</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">Description</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">Cap.Date</th><th style="padding:5px 8px;text-align:right;border-bottom:1px solid #edebe9">Acq.Cost</th><th style="padding:5px 8px;text-align:right;border-bottom:1px solid #edebe9">Acc.Depr.</th><th style="padding:5px 8px;text-align:right;border-bottom:1px solid #edebe9">NBV</th></tr>';
-          assets.forEach(a => {
-            extraHtml += '<tr><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (a.code||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (a.desc||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (a.date||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;text-align:right">' + (a.acqCost ? Number(a.acqCost).toLocaleString() : '-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;text-align:right">' + (a.accDepr ? Number(a.accDepr).toLocaleString() : '-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;text-align:right">' + (a.nbv ? Number(a.nbv).toLocaleString() : '-') + '</td></tr>';
-          });
-          extraHtml += '</table>';
-        }
-      } catch(e) {}
-    }
-    if (f.FAType === 'Disposal' && f.CostRevenue) {
-      try {
-        const costs = JSON.parse(f.CostRevenue);
-        if (costs && costs.length) {
-          extraHtml += '<div style="margin-top:14px;font-size:13px;font-weight:600;margin-bottom:8px">추가 비용/수익</div>';
-          extraHtml += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
-          extraHtml += '<tr style="background:#f3f2f1"><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">C/R</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">구분</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">BP Code/Name</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">CCTR</th><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #edebe9">Currency</th><th style="padding:5px 8px;text-align:right;border-bottom:1px solid #edebe9">금액(FC)</th></tr>';
-          costs.forEach(c => {
-            extraHtml += '<tr><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.cr||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.type||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.bp||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.cctr||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1">' + (c.currency||'-') + '</td><td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;text-align:right">' + (c.amount ? Number(c.amount).toLocaleString() : '-') + '</td></tr>';
-          });
-          extraHtml += '</table>';
-        }
-      } catch(e) {}
-    }
+    // ── 첨부파일 & 결재 ──
+    html += sec('첨부파일') + filesHtml + apprHtml;
 
-    document.getElementById('modal-content').innerHTML =
-      rows.map(([l,v]) => '<div class="modal-row"><div class="modal-label">' + l + '</div><div class="modal-value" style="white-space:pre-wrap">' + v + '</div></div>').join('') +
-      extraHtml +
-      '<div style="margin-top:12px;font-size:13px;font-weight:600;margin-bottom:6px">첨부파일</div>' + filesHtml + apprHtml;
-
+    document.getElementById('modal-content').innerHTML = html;
     const modal = document.getElementById('detail-modal');
     modal.style.display = 'flex';
   } catch(e) { alert('상세 조회 오류: ' + e.message); }
   finally { loading(false); }
 }
 
-let adminCache = [];
+
 async function loadAdminList() {
   if (!siteId) return;
   const tbody = document.getElementById('admin-body');
