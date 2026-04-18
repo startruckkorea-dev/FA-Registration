@@ -82,9 +82,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .badge-반려 { background: #fde7e9; color: #a4262c; }
 .badge-type { background: #e8f4ff; color: #0078d4; }
 
-.asset-row { display: grid; grid-template-columns: 28px 1fr 1fr 90px 1.6fr 90px 90px 90px; gap: 4px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.asset-row { display: grid; grid-template-columns: 28px 1fr 1fr 90px 1.6fr 90px 90px 90px; gap: 4px; align-items: center; margin-bottom: 4px; font-size: 12px; min-width: 700px; }
 .asset-row input { padding: 5px 7px; font-size: 12px; }
-.cost-row { display: grid; grid-template-columns: 40px 1fr 1.1fr 1fr 1.6fr 72px 72px 90px; gap: 4px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.cost-row { display: grid; grid-template-columns: 40px 1fr 1.1fr 1fr 1.6fr 72px 72px 90px; gap: 4px; align-items: center; margin-bottom: 4px; font-size: 12px; min-width: 700px; }
 .cost-row input, .cost-row select { padding: 5px 7px; font-size: 12px; }
 
 #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 998; align-items: center; justify-content: center; }
@@ -433,10 +433,19 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div style="overflow-x:auto;width:100%"><div id="dis-asset-rows"></div></div>
 
       <div class="section-title">3. 추가 비용/수익 (Additional Cost/Revenue)</div>
-      <div style="display:grid;grid-template-columns:40px 1fr 1.1fr 1fr 1.6fr 72px 72px 90px;gap:4px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
-        <span>C/R</span><span>구분</span><span>BP Code/Name</span><span>사유</span><span>CCTR</span><span>Currency</span><span>환율</span><span>금액(FC)</span>
+      <div style="overflow-x:auto;width:100%">
+        <div class="cost-row" style="background:#f3f2f1;border-radius:4px;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:600;color:#605e5c;text-align:center">C/R</span>
+          <span style="font-size:11px;font-weight:600;color:#605e5c">구분</span>
+          <span style="font-size:11px;font-weight:600;color:#605e5c">BP Code/Name</span>
+          <span style="font-size:11px;font-weight:600;color:#605e5c">사유</span>
+          <span style="font-size:11px;font-weight:600;color:#605e5c">CCTR</span>
+          <span style="font-size:11px;font-weight:600;color:#605e5c">Currency</span>
+          <span style="font-size:11px;font-weight:600;color:#605e5c">환율</span>
+          <span style="font-size:11px;font-weight:600;color:#605e5c">금액(FC)</span>
+        </div>
+        <div id="dis-cost-rows"></div>
       </div>
-      <div style="overflow-x:auto;width:100%"><div id="dis-cost-rows"></div></div>
       <button class="btn-secondary" style="font-size:12px;padding:4px 12px;margin-top:6px" onclick="addCostRow()">+ 행 추가</button>
 
       <div class="section-title">4. 결재자 지정</div>
