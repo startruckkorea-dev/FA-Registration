@@ -1170,8 +1170,10 @@ async function submitRequest(faType) {
       // Collect asset list rows
       const assetRows = [];
       const assetTrs = document.querySelectorAll('#dis-asset-rows tr');
-      assetTrs.forEach(tr => {
+      console.log('Asset TRs found:', assetTrs.length);
+      assetTrs.forEach((tr, idx) => {
         const inputs = tr.querySelectorAll('input');
+        console.log('TR', idx, '- inputs count:', inputs.length, '- values:', Array.from(inputs).map(i=>i.value));
         // inputs: [0]=AssetCode, [1]=Description, [2]=date, [3]=CCTR(text), [4]=acqCost, [5]=accDepr, [6]=nbv
         const code = inputs[0] ? inputs[0].value.trim() : '';
         const desc = inputs[1] ? inputs[1].value.trim() : '';
@@ -1187,10 +1189,12 @@ async function submitRequest(faType) {
           });
         }
       });
+      console.log('Asset rows collected:', JSON.stringify(assetRows));
       // Collect cost/revenue rows
       // Row structure: <select C/R> <input type> <input bp> <input reason> <input cctr> <select currency> <input rate> <input amount>
       const costRows = [];
       const costTrs = document.querySelectorAll('#dis-cost-rows tr');
+      console.log('Cost TRs found:', costTrs.length);
       costTrs.forEach(tr => {
         const selects = tr.querySelectorAll('select');
         const inputs = tr.querySelectorAll('input');
