@@ -82,9 +82,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .badge-반려 { background: #fde7e9; color: #a4262c; }
 .badge-type { background: #e8f4ff; color: #0078d4; }
 
-.asset-row { display: grid; grid-template-columns: 28px 1fr 1fr 90px 1.6fr 90px 90px 90px; gap: 4px; align-items: center; margin-bottom: 4px; font-size: 12px; min-width: 700px; }
+.asset-row { display: grid; grid-template-columns: 28px 1.2fr 1.2fr 100px 1.4fr 95px 95px 95px; gap: 5px; align-items: center; margin-bottom: 4px; font-size: 12px; }
 .asset-row input { padding: 5px 7px; font-size: 12px; }
-.cost-row { display: grid; grid-template-columns: 40px 1fr 1.1fr 1fr 1.6fr 72px 72px 90px; gap: 4px; align-items: center; margin-bottom: 4px; font-size: 12px; min-width: 700px; }
+.cost-row { display: grid; grid-template-columns: 40px 1.1fr 1.2fr 1fr 1.4fr 72px 72px 95px; gap: 5px; align-items: center; margin-bottom: 4px; font-size: 12px; }
 .cost-row input, .cost-row select { padding: 5px 7px; font-size: 12px; }
 
 #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 998; align-items: center; justify-content: center; }
@@ -1002,7 +1002,6 @@ function onDisposalTypeChange() {
 
 // ── ASSET / COST ROWS ──
 function initAssetRows() {
-  // Disposal asset rows
   const disContainer = document.getElementById('dis-asset-rows');
   disContainer.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
@@ -1011,29 +1010,27 @@ function initAssetRows() {
     row.id = 'dis-asset-' + i;
     row.innerHTML =
       '<span style="font-size:12px;color:#605e5c;text-align:center;padding-top:6px">' + i + '</span>' +
-      '<input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-      '<input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-      '<input type="date" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-      '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px">' + CCTR_OPTIONS_HTML + '</select>' +
-      '<input type="number" placeholder="취득원가" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-      '<input type="number" placeholder="감가상각" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-      '<input type="number" placeholder="장부가액" readonly style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px;background:#f3f2f1">';
+      '<input type="text" placeholder="xxxxxxxx" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+      '<input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+      '<input type="date" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+      '<input type="text" list="cctr-datalist" placeholder="CCTR 검색" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+      '<input type="number" placeholder="취득원가" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+      '<input type="number" placeholder="감가상각" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+      '<input type="number" placeholder="장부가액" readonly style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px;background:#f3f2f1">';
     disContainer.appendChild(row);
   }
-  // Cost rows
   const costContainer = document.getElementById('dis-cost-rows');
   costContainer.innerHTML = '';
   costRowCount = 0;
   for (let i = 0; i < 2; i++) addCostRow();
 
-  // Transfer asset rows
   const tfrContainer = document.getElementById('tfr-asset-rows');
   tfrContainer.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
     const trow = document.createElement('div');
-    trow.style.cssText = 'display:grid;grid-template-columns:40px 2fr 3fr 1fr 2fr;gap:6px;margin-bottom:6px';
+    trow.style.cssText = 'display:grid;grid-template-columns:28px 1.5fr 2.5fr 80px 1.5fr;gap:4px;margin-bottom:4px;align-items:center';
     trow.innerHTML =
-      '<span style="font-size:12px;color:#605e5c;text-align:center;padding-top:8px">' + i + '</span>' +
+      '<span style="font-size:12px;color:#605e5c;text-align:center;padding-top:6px">' + i + '</span>' +
       '<input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
       '<input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
       '<input type="number" placeholder="수량" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
@@ -1049,14 +1046,14 @@ function addCostRow() {
   row.className = 'cost-row';
   row.id = 'cost-row-' + costRowCount;
   row.innerHTML =
-    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 6px;font-size:12px"><option value="C">C</option><option value="R">R</option></select>' +
-    '<input type="text" placeholder="처분비용/매각금액" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-    '<input type="text" placeholder="BP Code / Name" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-    '<input type="text" placeholder="사유" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 4px;font-size:11px">' + CCTR_OPTIONS_HTML + '</select>' +
-    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 6px;font-size:12px">' + CURRENCY_OPTIONS_HTML + '</select>' +
-    '<input type="number" placeholder="환율" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px" value="1">' +
-    '<input type="number" placeholder="금액(FC)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">';
+    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 5px;font-size:12px"><option value="C">C</option><option value="R">R</option></select>' +
+    '<input type="text" placeholder="처분비용/매각금액" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+    '<input type="text" placeholder="BP Code / Name" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+    '<input type="text" placeholder="사유" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+    '<input type="text" list="cctr-datalist" placeholder="CCTR 검색" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">' +
+    '<select style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 5px;font-size:11px">' + CURRENCY_OPTIONS_HTML + '</select>' +
+    '<input type="number" placeholder="환율" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px" value="1">' +
+    '<input type="number" placeholder="금액(FC)" style="border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:11px">';
   document.getElementById('dis-cost-rows').appendChild(row);
 }
 
@@ -1423,5 +1420,6 @@ function closeModal() { document.getElementById('detail-modal').style.display = 
   btn.disabled = false; btn.style.background = ''; btn.textContent = 'Microsoft 계정으로 로그인';
 })();
 </script>
+<datalist id="cctr-datalist"><option value="(47900704) RD Office"><option value="(47900705) CEO Office"><option value="(47900715) HR"><option value="(47900708) Compliance"><option value="(47926134) PMM Head Office"><option value="(47926145) Homologation"><option value="(47925185) Delivery Center"><option value="(47926135) Product Management"><option value="(47920205) Sales Training"><option value="(47925155) Marketing& Communication"><option value="(47926114) Sales Head Office"><option value="(47926115) Sales Planning & Operation"><option value="(47927165) Bodybuilder/Fleet Sales"><option value="(47927115) Unimog Sales"><option value="(47941115) STK Field Seoul"><option value="(47928115) STK Field Busan"><option value="(47920115) STK Field Gwangju"><option value="(47910115) STK Field Jecheon"><option value="(47953305) CSP Head Office"><option value="(47955405) Technical Operation"><option value="(47954405) Unimog CSP"><option value="(47950466) Technical Training"><option value="(47954325) Parts OP & Logistics"><option value="(47954345) Parts Performance"><option value="(47954415) CRM & Call Center"><option value="(47920765) Service & Network"><option value="(47954455) District Management"><option value="(47954435) Warranty"><option value="(47900706) CFO Office"><option value="(47900825) Procurement"><option value="(47900776) Accounting"><option value="(47900775) Controlling"><option value="(47900745) IT Application"><option value="(47900755) IT Infrastructure"></datalist>
 </body>
 </html>
