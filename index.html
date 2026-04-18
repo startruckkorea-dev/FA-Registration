@@ -1172,19 +1172,44 @@ async function submitRequest(faType) {
       const assetTrs = document.querySelectorAll('#dis-asset-rows tr');
       assetTrs.forEach(tr => {
         const inputs = tr.querySelectorAll('input');
-        if (inputs[0] && inputs[0].value.trim()) {
-          assetRows.push({ code: inputs[0].value, desc: inputs[1].value, date: inputs[2].value, cctr: inputs[3].value, acqCost: inputs[4].value, accDepr: inputs[5].value, nbv: inputs[6].value });
+        // inputs: [0]=AssetCode, [1]=Description, [2]=date, [3]=CCTR(text), [4]=acqCost, [5]=accDepr, [6]=nbv
+        const code = inputs[0] ? inputs[0].value.trim() : '';
+        const desc = inputs[1] ? inputs[1].value.trim() : '';
+        if (code || desc) {
+          assetRows.push({
+            code: code,
+            desc: desc,
+            date: inputs[2] ? inputs[2].value : '',
+            cctr: inputs[3] ? inputs[3].value : '',
+            acqCost: inputs[4] ? inputs[4].value : '',
+            accDepr: inputs[5] ? inputs[5].value : '',
+            nbv: inputs[6] ? inputs[6].value : ''
+          });
         }
       });
       // Collect cost/revenue rows
+      // Row structure: <select C/R> <input type> <input bp> <input reason> <input cctr> <select currency> <input rate> <input amount>
       const costRows = [];
       const costTrs = document.querySelectorAll('#dis-cost-rows tr');
       costTrs.forEach(tr => {
-        const sel = tr.querySelector('select');
+        const selects = tr.querySelectorAll('select');
         const inputs = tr.querySelectorAll('input');
-        const currSel = tr.querySelectorAll('select')[1];
-        if (inputs[0] && inputs[0].value.trim()) {
-          costRows.push({ cr: sel ? sel.value : 'C', type: inputs[0].value, bp: inputs[1].value, reason: inputs[2].value, cctr: inputs[3].value, currency: currSel ? currSel.value : 'KRW', rate: inputs[4] ? inputs[4].value : '1', amount: inputs[5] ? inputs[5].value : '' });
+        const crVal = selects[0] ? selects[0].value : 'C';
+        const currVal = selects[1] ? selects[1].value : 'KRW';
+        // inputs: [0]=type/구분, [1]=bp, [2]=reason/사유, [3]=cctr, [4]=rate, [5]=amount
+        const typeVal = inputs[0] ? inputs[0].value.trim() : '';
+        const amountVal = inputs[5] ? inputs[5].value : '';
+        if (typeVal || amountVal) {
+          costRows.push({
+            cr: crVal,
+            type: typeVal,
+            bp: inputs[1] ? inputs[1].value : '',
+            reason: inputs[2] ? inputs[2].value : '',
+            cctr: inputs[3] ? inputs[3].value : '',
+            currency: currVal,
+            rate: inputs[4] ? inputs[4].value : '1',
+            amount: amountVal
+          });
         }
       });
       fields = {
