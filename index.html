@@ -1291,7 +1291,7 @@ async function submitRequest(faType) {
           if (res.ok) {
             const u = await res.json();
             console.log('Upload success:', file.name, u.webUrl);
-            fileLinks.push(file.name + '|' + (u.webUrl || ''));
+            fileLinks.push(file.name + '||' + drive.id + '||' + u.id);
           } else {
             const errText = await res.text();
             console.error('Upload failed:', res.status, errText);
@@ -1358,6 +1358,7 @@ function resetTransferForm() {
 
 // ── LISTS ──
 function fmtDate(iso) {
+  if (!iso) return '';
   const d = new Date(iso);
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
     ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
@@ -1462,13 +1463,27 @@ async function showDetail(requestId) {
     // ── 첨부파일 ──
     let filesHtml = '<div style="font-size:13px;color:#605e5c">첨부파일 없음</div>';
     if (f.AttachedFiles) {
-      filesHtml = f.AttachedFiles.split(';').map(entry => {
-        const pi = entry.indexOf('|'); if (pi === -1) return '';
-        const name = entry.slice(0, pi).trim();
-        let url = entry.slice(pi + 1).trim();
-        if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + ' (링크 없음)</div>';
+      if (f.AttachedFiles) {
+      const fileEntries = f.AttachedFiles
+        .replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'')
+        .split(';').filter(e => e.trim());
+      filesHtml = fileEntries.map(entry => {
+        const name = entry.split('|')[0].trim();
+        if (!name) return '';
+        // 새 형식: name||driveId||itemId
+        const newFmt = entry.split('||');
+        if (newFmt.length === 3) {
+          const driveId = newFmt[1].trim();
+          const itemId  = newFmt[2].trim();
+          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + '</a></div>';
+        }
+        // 구 형식: name|webUrl
+        const parts = entry.split('|');
+        const url = parts[1] ? parts[1].trim() : '';
+        if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + '</div>';
         return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
       }).filter(Boolean).join('');
+    }
     }
 
     // ── 결재 이력 ──
@@ -1674,6 +1689,29 @@ async function loadAdminList() {
   } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
+// ── 파일 열기: Graph API downloadUrl → 새 탭 ──
+document.addEventListener('click', async function(e) {
+  const link = e.target.closest('.file-dl-link');
+  if (!link) return;
+  e.preventDefault();
+  const itemId  = decodeURIComponent(link.getAttribute('data-id')   || '');
+  const driveId = decodeURIComponent(link.getAttribute('data-drive') || '');
+  if (!itemId || !driveId) { alert('파일 정보가 없습니다.'); return; }
+  loading(true);
+  try {
+    const t = await token();
+    const res = await fetch(
+      GRAPH + '/drives/' + driveId + '/items/' + itemId,
+      { headers: { Authorization: 'Bearer ' + t } }
+    );
+    if (!res.ok) throw new Error('파일 정보 조회 실패 (' + res.status + ')');
+    const data = await res.json();
+    const dlUrl = data['@microsoft.graph.downloadUrl'] || data.webUrl;
+    if (!dlUrl) throw new Error('다운로드 URL을 가져올 수 없습니다.');
+    window.open(dlUrl, '_blank');
+  } catch(err) { alert('파일 열기 오류: ' + err.message); }
+  finally { loading(false); }
+});
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
 function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
 function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
