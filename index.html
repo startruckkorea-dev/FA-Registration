@@ -1396,9 +1396,9 @@ async function loadApprovalQueue() {
   const tbody = document.getElementById('appr-body');
   try {
     const data = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
-    const mine = data.value.filter(i =>
-      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
-    );
+    const mine = data.value
+      .filter(i => (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기')
+      .sort((a, b) => b.fields.RequestID - a.fields.RequestID);  // 최신(높은 번호)순 정렬
     if (!mine.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>'; return; }
     const rows = await Promise.all(mine.map(async item => {
       const f = item.fields;
