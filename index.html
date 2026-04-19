@@ -127,7 +127,10 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
 <div id="app">
   <div class="header">
-    <div class="title">FA Master Data Management</div>
+    <div>
+      <div class="title">FA Master Data Management</div>
+      <div style="font-size:11px;color:#605e5c;margin-top:3px">FA 관련 문의 Email: sora.kim@hyosung.com</div>
+    </div>
     <div class="user-info">
       <span id="user-name"></span>
       <button id="btn-logout" onclick="signOut()">로그아웃</button>
@@ -308,7 +311,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">3. 결재자 지정</div>
       <div class="appr-block">
-        <div class="appr-title">1차 결재자</div>
+        <div class="appr-title">1차 결재자 <span style="color:#a4262c;font-size:11px">*</span> <span style="font-size:11px;color:#605e5c;font-weight:400">— Line Manager (팀장)</span></div>
         <div class="appr-grid">
           <select id="reg-a1-dept" onchange="onDeptChange(1,'reg')"><option value="">부서</option></select>
           <select id="reg-a1-team" onchange="onTeamChange(1,'reg')" disabled><option value="">팀</option></select>
@@ -320,7 +323,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
       <div class="appr-block">
-        <div class="appr-title">2차 결재자</div>
+        <div class="appr-title">2차 결재자 <span style="font-size:11px;color:#605e5c;font-weight:400">— Department Head (부서장)</span></div>
         <div class="appr-grid">
           <select id="reg-a2-dept" onchange="onDeptChange(2,'reg')"><option value="">부서</option></select>
           <select id="reg-a2-team" onchange="onTeamChange(2,'reg')" disabled><option value="">팀</option></select>
@@ -471,7 +474,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">4. 결재자 지정</div>
       <div class="appr-block">
-        <div class="appr-title">1차 결재자</div>
+        <div class="appr-title">1차 결재자 <span style="color:#a4262c;font-size:11px">*</span> <span style="font-size:11px;color:#605e5c;font-weight:400">— Line Manager (팀장)</span></div>
         <div class="appr-grid">
           <select id="dis-a1-dept" onchange="onDeptChange(1,'dis')"><option value="">부서</option></select>
           <select id="dis-a1-team" onchange="onTeamChange(1,'dis')" disabled><option value="">팀</option></select>
@@ -483,7 +486,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
       <div class="appr-block">
-        <div class="appr-title">2차 결재자</div>
+        <div class="appr-title">2차 결재자 <span style="font-size:11px;color:#605e5c;font-weight:400">— Department Head (부서장)</span></div>
         <div class="appr-grid">
           <select id="dis-a2-dept" onchange="onDeptChange(2,'dis')"><option value="">부서</option></select>
           <select id="dis-a2-team" onchange="onTeamChange(2,'dis')" disabled><option value="">팀</option></select>
@@ -702,7 +705,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 
       <div class="section-title">3. 결재자 지정</div>
       <div class="appr-block">
-        <div class="appr-title">1차 결재자</div>
+        <div class="appr-title">1차 결재자 <span style="color:#a4262c;font-size:11px">*</span> <span style="font-size:11px;color:#605e5c;font-weight:400">— Line Manager (팀장)</span></div>
         <div class="appr-grid">
           <select id="tfr-a1-dept" onchange="onDeptChange(1,'tfr')"><option value="">부서</option></select>
           <select id="tfr-a1-team" onchange="onTeamChange(1,'tfr')" disabled><option value="">팀</option></select>
@@ -714,7 +717,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
       <div class="appr-block">
-        <div class="appr-title">2차 결재자</div>
+        <div class="appr-title">2차 결재자 <span style="font-size:11px;color:#605e5c;font-weight:400">— Department Head (부서장)</span></div>
         <div class="appr-grid">
           <select id="tfr-a2-dept" onchange="onDeptChange(2,'tfr')"><option value="">부서</option></select>
           <select id="tfr-a2-team" onchange="onTeamChange(2,'tfr')" disabled><option value="">팀</option></select>
