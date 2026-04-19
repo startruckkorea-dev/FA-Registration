@@ -1463,7 +1463,6 @@ async function showDetail(requestId) {
     // ── 첨부파일 ──
     let filesHtml = '<div style="font-size:13px;color:#605e5c">첨부파일 없음</div>';
     if (f.AttachedFiles) {
-      if (f.AttachedFiles) {
       const fileEntries = f.AttachedFiles
         .replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'')
         .split(';').filter(e => e.trim());
