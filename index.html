@@ -229,14 +229,14 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           <label>GL Account <span class="req">*</span></label>
           <select id="reg-gl" onchange="onGLChange()">
             <option value="">-- 선택 --</option>
-            <option value="120210 Computersoftware" data-cls="210100 Computer software" data-months="36 Month" data-kr="무형자산" data-account="컴퓨터소프트웨어">120210 Computersoftware</option>
-<option value="120110 TechnicalEquipment-Office&W/H" data-cls="241000 Technical Equipment - Office & W/H" data-months="72 Month" data-kr="유형자산" data-account="비품">120110 TechnicalEquipment-Office&W/H</option>
-<option value="120120 Fixturesandfittings" data-cls="222000 Fixtures and fittings" data-months="48 Month" data-kr="유형자산" data-account="비품">120120 Fixturesandfittings</option>
+            <option value="120210 Computer software" data-cls="210100 Computer software" data-months="36 Month" data-kr="무형자산" data-account="컴퓨터소프트웨어">120210 Computer software</option>
+<option value="120110 Technical Equipment - Office&W/H" data-cls="241000 Technical Equipment - Office & W/H" data-months="72 Month" data-kr="유형자산" data-account="비품">120110 Technical Equipment - Office&W/H</option>
+<option value="120120 Fixtures and fittings" data-cls="222000 Fixtures and fittings" data-months="48 Month" data-kr="유형자산" data-account="비품">120120 Fixtures and fittings</option>
 <option value="120130 Fixtures&fittings_SSQ" data-cls="222010 Fixtures & fittings_SSQ" data-months="120 Month" data-kr="유형자산" data-account="비품">120130 Fixtures&fittings_SSQ</option>
-<option value="120140 OfficeFurniture&Equipment" data-cls="245020 Office Furniture & Equipment" data-months="180 Months" data-kr="유형자산" data-account="비품">120140 OfficeFurniture&Equipment</option>
-<option value="120150 Computerequipment" data-cls="245150 Computer equipment" data-months="36 Months" data-kr="유형자산" data-account="비품">120150 Computerequipment</option>
-<option value="120150 Computerequipment(onlyPC)" data-cls="246000 Computer equipment(only PC)" data-months="36 Months" data-kr="유형자산" data-account="비품">120150 Computerequipment(onlyPC)</option>
-<option value="120160 Companyvehicles" data-cls="248010 Company vehicles" data-months="72 Months" data-kr="유형자산" data-account="차량운반구">120160 Companyvehicles</option>
+<option value="120140 Office Furniture & Equipment" data-cls="245020 Office Furniture & Equipment" data-months="180 Months" data-kr="유형자산" data-account="비품">120140 Office Furniture & Equipment</option>
+<option value="120150 Computer equipment" data-cls="245150 Computer equipment" data-months="36 Months" data-kr="유형자산" data-account="비품">120150 Computer equipment</option>
+<option value="120150 Computer equipment (only PC)" data-cls="246000 Computer equipment(only PC)" data-months="36 Months" data-kr="유형자산" data-account="비품">120150 Computer equipment (only PC)</option>
+<option value="120160 Company vehicles" data-cls="248010 Company vehicles" data-months="72 Months" data-kr="유형자산" data-account="차량운반구">120160 Company vehicles</option>
           </select>
         </div>
         <div class="form-group">
@@ -1007,7 +1007,7 @@ function onPersonChange(idx, prefix) {
 }
 
 // ── GL AUTO-MAPPING ──
-const GL_MAP = [{"gl":"120210 Computersoftware","cls":"210100 Computer software","desc":"Computer software","months":"36 Month","kr":"무형자산","account":"컴퓨터소프트웨어"},{"gl":"120110 TechnicalEquipment-Office&W/H","cls":"241000 Technical Equipment - Office & W/H","desc":"Technical Equipment - Office & W/H","months":"72 Month","kr":"유형자산","account":"비품"},{"gl":"120120 Fixturesandfittings","cls":"222000 Fixtures and fittings","desc":"Fixtures and fittings","months":"48 Month","kr":"유형자산","account":"비품"},{"gl":"120130 Fixtures&fittings_SSQ","cls":"222010 Fixtures & fittings_SSQ","desc":"Fixtures & fittings_SSQ","months":"120 Month","kr":"유형자산","account":"비품"},{"gl":"120140 OfficeFurniture&Equipment","cls":"245020 Office Furniture & Equipment","desc":"Office Furniture & Equipment","months":"180 Months","kr":"유형자산","account":"비품"},{"gl":"120150 Computerequipment","cls":"245150 Computer equipment","desc":"Computer equipment","months":"36 Months","kr":"유형자산","account":"비품"},{"gl":"120150 Computerequipment(onlyPC)","cls":"246000 Computer equipment(only PC)","desc":"Computer equipment(only PC)","months":"36 Months","kr":"유형자산","account":"비품"},{"gl":"120160 Companyvehicles","cls":"248010 Company vehicles","desc":"Company vehicles","months":"72 Months","kr":"유형자산","account":"차량운반구"}];
+const GL_MAP = [{"gl":"120210 Computer software","cls":"210100 Computer software","desc":"Computer software","months":"36 Month","kr":"무형자산","account":"컴퓨터소프트웨어"},{"gl":"120110 Technical Equipment - Office&W/H","cls":"241000 Technical Equipment - Office & W/H","desc":"Technical Equipment - Office & W/H","months":"72 Month","kr":"유형자산","account":"비품"},{"gl":"120120 Fixtures and fittings","cls":"222000 Fixtures and fittings","desc":"Fixtures and fittings","months":"48 Month","kr":"유형자산","account":"비품"},{"gl":"120130 Fixtures&fittings_SSQ","cls":"222010 Fixtures & fittings_SSQ","desc":"Fixtures & fittings_SSQ","months":"120 Month","kr":"유형자산","account":"비품"},{"gl":"120140 Office Furniture & Equipment","cls":"245020 Office Furniture & Equipment","desc":"Office Furniture & Equipment","months":"180 Months","kr":"유형자산","account":"비품"},{"gl":"120150 Computer equipment","cls":"245150 Computer equipment","desc":"Computer equipment","months":"36 Months","kr":"유형자산","account":"비품"},{"gl":"120150 Computer equipment (only PC)","cls":"246000 Computer equipment(only PC)","desc":"Computer equipment(only PC)","months":"36 Months","kr":"유형자산","account":"비품"},{"gl":"120160 Company vehicles","cls":"248010 Company vehicles","desc":"Company vehicles","months":"72 Months","kr":"유형자산","account":"차량운반구"}];
 function onGLChange() {
   const gl = document.getElementById('reg-gl').value;
   const data = GL_MAP.find(g => g.gl === gl);
