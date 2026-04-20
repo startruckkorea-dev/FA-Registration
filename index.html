@@ -523,6 +523,27 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           <input type="email" readonly value="sora.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
         </div>
       </div>
+      <div class="appr-block">
+        <div class="appr-title">최종결재자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">최종결재자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">최종결재자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
 
       <div class="section-title">5. 첨부파일 <span style="color:#a4262c">*</span></div>
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">처분 및 매각할 자산의 사진이 첨부되었는지 다시 한번 확인해주세요.</div>
@@ -780,6 +801,27 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <div class="form-row">
           <input type="text" readonly value="Sora Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
           <input type="email" readonly value="sora.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">최종결재자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">최종결재자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">최종결재자 (자동 지정)</div>
+        <div class="form-row">
+          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
         </div>
       </div>
 
@@ -1381,6 +1423,7 @@ async function submitRequest(faType) {
         VendorInfo: document.getElementById('reg-vendor').value,
         SerialNumber: document.getElementById('reg-serial').value,
         Purpose: document.getElementById('reg-purpose').value.trim(),
+        Remark: document.getElementById('reg-remark')?.value || '',
         Status: '대기', RequesterEmail: user.username,
         RequestDate: new Date().toISOString()
       };
@@ -1518,11 +1561,28 @@ async function submitRequest(faType) {
     }
 
     // Create approvals
-    const approvers = [
+    let approvers = [
       { name: document.getElementById(prefix + '-a1-name').value, email: document.getElementById(prefix + '-a1-email').value, role: '1차결재자', order: 1 },
       { name: document.getElementById(prefix + '-a2-name').value, email: document.getElementById(prefix + '-a2-email').value, role: '2차결재자', order: 2 },
       { name: FA_ACCOUNTANT.name, email: FA_ACCOUNTANT.email, role: '회계담당자', order: 3 },
+      { name: 'Martin Kim', email: 'martin.kim@hyosung.com', role: '최종결재자', order: 4 },
     ];
+    // Transfer: 이동 후 부서 결재자(3차,4차) 추가 후 회계/마틴 순서 재조정
+    if (faType === 'Transfer') {
+      const a3name = document.getElementById('tfr-a3-name')?.value;
+      const a3email = document.getElementById('tfr-a3-email')?.value;
+      const a4name = document.getElementById('tfr-a4-name')?.value;
+      const a4email = document.getElementById('tfr-a4-email')?.value;
+      approvers = [
+        { name: document.getElementById('tfr-a1-name').value, email: document.getElementById('tfr-a1-email').value, role: '1차결재자(이동전 Line Manager)', order: 1 },
+        { name: document.getElementById('tfr-a2-name').value, email: document.getElementById('tfr-a2-email').value, role: '2차결재자(이동전 부서장)', order: 2 },
+      ];
+      if (a3email) approvers.push({ name: a3name, email: a3email, role: '3차결재자(이동후 Line Manager)', order: 3 });
+      if (a4email) approvers.push({ name: a4name, email: a4email, role: '4차결재자(이동후 부서장)', order: 4 });
+      const nextOrder = approvers.length + 1;
+      approvers.push({ name: FA_ACCOUNTANT.name, email: FA_ACCOUNTANT.email, role: '회계담당자', order: nextOrder });
+      approvers.push({ name: 'Martin Kim', email: 'martin.kim@hyosung.com', role: '최종결재자', order: nextOrder + 1 });
+    }
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/FA_Approvals/items', 'POST', { fields: {
         Title: reqId + '-' + a.order, RequestID: parseInt(reqId),
@@ -1565,8 +1625,10 @@ function resetTransferForm() {
 
 // ── LISTS ──
 function fmtDate(iso) {
+  if (!iso) return '';
   const d = new Date(iso);
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
+    ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
 async function loadMyList() {
@@ -1601,9 +1663,9 @@ async function loadApprovalQueue() {
   const tbody = document.getElementById('appr-body');
   try {
     const data = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
-    const mine = data.value.filter(i =>
-      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
-    );
+    const mine = data.value
+      .filter(i => (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기')
+      .sort((a, b) => b.fields.RequestID - a.fields.RequestID);
     if (!mine.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>'; return; }
     const rows = await Promise.all(mine.map(async item => {
       const f = item.fields;
@@ -1728,6 +1790,7 @@ async function showDetail(requestId) {
         (f.SerialNumber ? row('Model / Serial Number', f.SerialNumber) : '') +
         sec('2. 신청사유') +
         row('신청사유 (Purpose)', f.Purpose, true);
+      if (f.Remark) html += row('비고 (Remarks)', f.Remark);
 
     // ── Disposal ──
     } else if (f.FAType === 'Disposal') {
