@@ -1477,8 +1477,7 @@ async function submitRequest(faType) {
         Location: document.getElementById('dis-location').value,
         DisposalType: document.getElementById('dis-type').value,
         DisposalMethod: document.getElementById('dis-method') ? document.getElementById('dis-method').value : '',
-        SellingPrice: (document.getElementById('dis-selling-price').value || '').replace(/,/g,'') || '0',
-        EstRepairCost: (document.getElementById('dis-repair-cost').value || '').replace(/,/g,'') || '',
+        SellingPrice: ((document.getElementById('dis-selling-price').value || '').replace(/,/g,'') || '0') + '|' + ((document.getElementById('dis-repair-cost').value || '').replace(/,/g,'')),
         Reason: document.getElementById('dis-reason').value.trim(),
         AssetList: assetRows.length ? JSON.stringify(assetRows) : '',
         CostRevenue: costRows.length ? JSON.stringify(costRows) : '',
@@ -1793,8 +1792,13 @@ async function showDetail(requestId) {
         row('Location', f.Location) +
         row('Type', f.DisposalType) +
         row('Disposal Method', f.DisposalMethod) +
-        row('Selling Price (부가세 제외)', f.SellingPrice && f.SellingPrice !== '0' ? Number(String(f.SellingPrice).replace(/,/g,'')).toLocaleString() + ' 원' : '-') +
-        row('Est. Repair Cost', f.EstRepairCost && f.EstRepairCost !== '' ? Number(String(f.EstRepairCost).replace(/,/g,'')).toLocaleString() + ' 원' : '-') +
+        (function(){
+          const spParts = String(f.SellingPrice||'0').split('|');
+          const sp = spParts[0] || '0';
+          const rc = spParts[1] || '';
+          return row('Selling Price (부가세 제외)', sp && sp !== '0' ? Number(sp.replace(/,/g,'')).toLocaleString() + ' 원' : '-') +
+                 row('Est. Repair Cost', rc && rc !== '' ? Number(rc.replace(/,/g,'')).toLocaleString() + ' 원' : '-');
+        })() +
         row('Reason of Loss / Damage', f.Reason, true);
 
       // 자산 리스트
@@ -1858,8 +1862,9 @@ async function showDetail(requestId) {
               const amt  = parseFloat(String(c.amount||'0').replace(/,/g,'')) || 0;
               return sum + rate * amt;
             }, 0);
-            const selling  = parseFloat(String(f.SellingPrice||'0').replace(/,/g,'')) || 0;
-            const repair   = parseFloat(String(f.EstRepairCost||'0').replace(/,/g,'')) || 0;
+            const spParts2 = String(f.SellingPrice||'0').split('|');
+            const selling  = parseFloat(spParts2[0].replace(/,/g,'')) || 0;
+            const repair   = parseFloat((spParts2[1]||'').replace(/,/g,'')) || 0;
             const expected = selling + repair;
             const totalStr = costTotal ? costTotal.toLocaleString() + ' KRW' : '-';
             html += '<div style="text-align:right;padding:4px 8px;font-size:12px;color:#0078d4;font-weight:600">합계 (KRW 환산): ' + totalStr + '</div>';
