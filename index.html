@@ -212,7 +212,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 <option value="(47900745) IT Application">(47900745) IT Application [IT]</option>
 <option value="(47900755) IT Infrastructure">(47900755) IT Infrastructure [IT]</option>
           </select>
-          <div style="font-size:11px;color:#605e5c;margin-top:4px">※ 사업부 소속이 아닌 STK 직원의 경우 소속된 CCTR을 선택해주세요.</div>
+          <div style="font-size:11px;color:#605e5c;margin-top:4px">CCTR이 목록에 없는 경우 비고란에 직접 입력 부탁드립니다.</div>
         </div>
         <div class="form-group">
           <label>Type <span class="req">*</span></label>
@@ -488,7 +488,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           </tfoot>
         </table>
       </div>
-      <div id="selling-match-notice" style="display:none;font-size:11px;color:#a4262c;margin-top:4px">⚠️ 합계금액이 Selling Price + Est.Repair Cost와 일치하지 않습니다. 확인 후 다시 시도해주세요.</div>
+      <div id="selling-match-notice" style="display:none;font-size:11px;margin-top:4px"></div>
       <button class="btn-secondary" style="font-size:12px;padding:4px 12px;margin-top:6px" onclick="addCostRow()">+ 행 추가</button>
 
       <div class="section-title">4. 결재자 지정</div>
@@ -1152,9 +1152,9 @@ function onCostTypeChange(sel, rid) {
 }
 function calcNBV(input) {
   const cells = Array.from(input.closest('tr').querySelectorAll('input[type="number"]'));
-  const acq  = parseFloat(cells[cells.length - 3]?.value) || 0;
-  const depr = parseFloat(cells[cells.length - 2]?.value) || 0;
-  cells[cells.length - 1].value = acq - depr;
+  const acq  = parseFloat(String(cells[cells.length - 3]?.value || '').replace(/,/g,'')) || 0;
+  const depr = parseFloat(String(cells[cells.length - 2]?.value || '').replace(/,/g,'')) || 0;
+  cells[cells.length - 1].value = (acq - depr).toLocaleString();
 }
 function calcCostTotal() {
   let total = 0;
@@ -1168,8 +1168,34 @@ function calcCostTotal() {
   if (el) el.textContent = total ? total.toLocaleString() + ' KRW' : '-';
   const selling = parseFloat((document.getElementById('dis-selling-price')?.value || '').replace(/,/g,'')) || 0;
   const repair  = parseFloat(document.getElementById('dis-repair-cost')?.value) || 0;
-  const notice  = document.getElementById('selling-match-notice');
-  if (notice) notice.style.display = (total > 0 && selling > 0 && Math.abs(total - (selling + repair)) > 1) ? 'block' : 'none';
+  const notice = document.getElementById('selling-match-notice');
+  if (notice && (total > 0 || selling > 0)) {
+    const expected = selling + repair;
+    const diff = Math.abs(total - expected);
+    if (selling > 0 && total > 0) {
+      if (diff <= 1) {
+        notice.style.display = 'block';
+        notice.style.color = '#107c10';
+        notice.style.background = '#e8f5e8';
+        notice.style.padding = '6px 10px';
+        notice.style.borderRadius = '4px';
+        notice.style.border = '1px solid #c3e6c3';
+        notice.textContent = '✅ 합계금액이 Selling Price와 일치합니다.';
+      } else {
+        notice.style.display = 'block';
+        notice.style.color = '#a4262c';
+        notice.style.background = '#fdf3f3';
+        notice.style.padding = '6px 10px';
+        notice.style.borderRadius = '4px';
+        notice.style.border = '1px solid #f4c6c6';
+        notice.textContent = 'Selling price 또는 Est.Repair cost가 있는 경우 3. 추가 비용/수익의 합계금액과 일치해야 합니다.';
+      }
+    } else {
+      notice.style.display = 'none';
+    }
+  } else if (notice) {
+    notice.style.display = 'none';
+  }
 }
 function formatNumber(input) {
   const raw = input.value.replace(/,/g, '');
