@@ -1226,7 +1226,7 @@ function calcCostTotal() {
   // selling 또는 repair 중 하나라도 입력됐을 때 체크
   if (expected > 0 && total > 0) {
     const diff = Math.abs(total - expected);
-    if (diff <= 1) {
+    if (diff === 0) {
       notice.style.cssText = 'display:block;font-size:11px;margin-top:4px;color:#107c10;background:#e8f5e8;padding:6px 10px;border-radius:4px;border:1px solid #c3e6c3';
       notice.textContent = '✅ 합계금액이 Selling Price + Est.Repair Cost와 일치합니다.';
     } else {
