@@ -991,11 +991,12 @@ async function loadEmployees() {
 function initAllForms() {
   ['reg','dis','tfr'].forEach(prefix => {
     const depts = [...new Set(employeeData.map(e => e.dept))].sort();
-    const sel = document.getElementById(prefix + '-a1-dept');
-    const sel2 = document.getElementById(prefix + '-a2-dept');
     const opts = '<option value="">부서</option>' + depts.map(d => '<option value="' + d + '">' + d + '</option>').join('');
-    if (sel) sel.innerHTML = opts;
-    if (sel2) sel2.innerHTML = opts;
+    // a1~a4 모든 부서 드롭박스 채우기
+    ['a1','a2','a3','a4'].forEach(an => {
+      const sel = document.getElementById(prefix + '-' + an + '-dept');
+      if (sel) sel.innerHTML = opts;
+    });
   });
   const today = new Date().toISOString().split('T')[0];
   ['reg-submission-date','dis-submission-date','tfr-submission-date'].forEach(id => {
