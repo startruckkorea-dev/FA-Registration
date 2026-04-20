@@ -526,24 +526,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block">
         <div class="appr-title">최종결재자 (자동 지정)</div>
         <div class="form-row">
-          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="text" readonly value="Martin Schindele" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="martin.s.schindele@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
         </div>
       </div>
-      <div class="appr-block">
-        <div class="appr-title">최종결재자 (자동 지정)</div>
-        <div class="form-row">
-          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-        </div>
-      </div>
-      <div class="appr-block">
-        <div class="appr-title">최종결재자 (자동 지정)</div>
-        <div class="form-row">
-          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-        </div>
-      </div>
+
+
+
 
       <div class="section-title">5. 첨부파일 <span style="color:#a4262c">*</span></div>
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">처분 및 매각할 자산의 사진이 첨부되었는지 다시 한번 확인해주세요.</div>
@@ -806,24 +795,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block">
         <div class="appr-title">최종결재자 (자동 지정)</div>
         <div class="form-row">
-          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="text" readonly value="Martin Schindele" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" readonly value="martin.s.schindele@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
         </div>
       </div>
-      <div class="appr-block">
-        <div class="appr-title">최종결재자 (자동 지정)</div>
-        <div class="form-row">
-          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-        </div>
-      </div>
-      <div class="appr-block">
-        <div class="appr-title">최종결재자 (자동 지정)</div>
-        <div class="form-row">
-          <input type="text" readonly value="Martin Kim" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" readonly value="martin.kim@hyosung.com" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-        </div>
-      </div>
+
+
+
 
       <div class="section-title">4. 첨부파일 <span style="color:#a4262c">*</span></div>
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">이동할 자산의 사진을 첨부해주세요.</div>
@@ -1422,8 +1400,7 @@ async function submitRequest(faType) {
         AssetValue: document.getElementById('reg-asset-value').value,
         VendorInfo: document.getElementById('reg-vendor').value,
         SerialNumber: document.getElementById('reg-serial').value,
-        Purpose: document.getElementById('reg-purpose').value.trim(),
-        Remark: document.getElementById('reg-remark')?.value || '',
+        Purpose: document.getElementById('reg-purpose').value.trim() + (document.getElementById('reg-remark')?.value ? '\n[비고] ' + document.getElementById('reg-remark').value : ''),
         Status: '대기', RequesterEmail: user.username,
         RequestDate: new Date().toISOString()
       };
@@ -1565,7 +1542,7 @@ async function submitRequest(faType) {
       { name: document.getElementById(prefix + '-a1-name').value, email: document.getElementById(prefix + '-a1-email').value, role: '1차결재자', order: 1 },
       { name: document.getElementById(prefix + '-a2-name').value, email: document.getElementById(prefix + '-a2-email').value, role: '2차결재자', order: 2 },
       { name: FA_ACCOUNTANT.name, email: FA_ACCOUNTANT.email, role: '회계담당자', order: 3 },
-      { name: 'Martin Kim', email: 'martin.kim@hyosung.com', role: '최종결재자', order: 4 },
+      { name: 'Martin Schindele', email: 'martin.s.schindele@hyosung.com', role: '최종결재자', order: 4 },
     ];
     // Transfer: 이동 후 부서 결재자(3차,4차) 추가 후 회계/마틴 순서 재조정
     if (faType === 'Transfer') {
@@ -1581,7 +1558,7 @@ async function submitRequest(faType) {
       if (a4email) approvers.push({ name: a4name, email: a4email, role: '4차결재자(이동후 부서장)', order: 4 });
       const nextOrder = approvers.length + 1;
       approvers.push({ name: FA_ACCOUNTANT.name, email: FA_ACCOUNTANT.email, role: '회계담당자', order: nextOrder });
-      approvers.push({ name: 'Martin Kim', email: 'martin.kim@hyosung.com', role: '최종결재자', order: nextOrder + 1 });
+      approvers.push({ name: 'Martin Schindele', email: 'martin.s.schindele@hyosung.com', role: '최종결재자', order: nextOrder + 1 });
     }
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/FA_Approvals/items', 'POST', { fields: {
