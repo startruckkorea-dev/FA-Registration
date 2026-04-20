@@ -1739,10 +1739,16 @@ async function showDetail(requestId) {
           const itemId  = newFmt[2].trim();
           return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + '</a></div>';
         }
-        // 구 형식: name|webUrl
+        // 구 형식: name|webUrl → Graph API 경로로 변환해서 다운로드
         const parts = entry.split('|');
         const url = parts[1] ? parts[1].trim() : '';
         if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + '</div>';
+        // AttachedFiles 경로 추출 → Graph API /root:/경로:/content 형식으로 변환
+        const afIdx = url.indexOf('/AttachedFiles/');
+        if (afIdx >= 0) {
+          const relPath = decodeURIComponent(url.slice(afIdx + 1)); // AttachedFiles/FA_.../34/file.png
+          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-legacy-link" data-path="' + encodeURIComponent(relPath) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + '</a></div>';
+        }
         return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
       }).filter(Boolean).join('');
     }
@@ -1996,6 +2002,34 @@ document.addEventListener('click', async function(e) {
     const t = await token();
     const res = await fetch(
       GRAPH + '/drives/' + driveId + '/items/' + itemId,
+      { headers: { Authorization: 'Bearer ' + t } }
+    );
+    if (!res.ok) throw new Error('파일 정보 조회 실패 (' + res.status + ')');
+    const data = await res.json();
+    const dlUrl = data['@microsoft.graph.downloadUrl'] || data.webUrl;
+    if (!dlUrl) throw new Error('다운로드 URL을 가져올 수 없습니다.');
+    window.open(dlUrl, '_blank');
+  } catch(err) { alert('파일 열기 오류: ' + err.message); }
+  finally { loading(false); }
+});
+
+// 구 형식 파일 (webUrl 저장) - Graph API root path로 다운로드
+document.addEventListener('click', async function(e) {
+  const link = e.target.closest('.file-legacy-link');
+  if (!link) return;
+  e.preventDefault();
+  const relPath = decodeURIComponent(link.getAttribute('data-path') || '');
+  if (!relPath) return;
+  loading(true);
+  try {
+    const t = await token();
+    // GET /drives/{driveId}/root:/{relPath}?select=@microsoft.graph.downloadUrl
+    const drivesData = await api('/sites/' + siteId + '/drives');
+    const drive = drivesData.value.find(d => d.name === 'AttachedFiles') || drivesData.value[0];
+    // relPath: "AttachedFiles/FA_Requests_AttachedFiles/34/file.png" → 드라이브 루트 기준 경로
+    const drivePath = relPath.replace(/^AttachedFiles\//, '');
+    const res = await fetch(
+      GRAPH + '/drives/' + drive.id + '/root:/' + encodeURIComponent(drivePath).replace(/%2F/g, '/'),
       { headers: { Authorization: 'Bearer ' + t } }
     );
     if (!res.ok) throw new Error('파일 정보 조회 실패 (' + res.status + ')');
