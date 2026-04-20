@@ -1174,6 +1174,7 @@ function addCostRow() {
   const inpRate = document.createElement('input');
   inpRate.type = 'text';
   inpRate.setAttribute('data-role', 'rate');
+  inpRate.className = 'cost-rate-inp';
   inpRate.value = '1';
   inpRate.style.cssText = 'text-align:right;width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:12px';
   inpRate.oninput = function() { onCostAmtInput(this); };
@@ -1184,6 +1185,7 @@ function addCostRow() {
   const inpAmt = document.createElement('input');
   inpAmt.type = 'text';
   inpAmt.setAttribute('data-role', 'amt');
+  inpAmt.className = 'cost-amt-inp';
   inpAmt.placeholder = '0';
   inpAmt.style.cssText = 'text-align:right;width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:12px';
   inpAmt.oninput = function() { onCostAmtInput(this); };
@@ -1204,8 +1206,8 @@ function onCostTypeChange(sel, rid) {
 function calcCostTotal() {
   let total = 0;
   document.querySelectorAll('#dis-cost-rows tr').forEach(tr => {
-    const rateEl = tr.querySelector('[data-role="rate"]');
-    const amtEl  = tr.querySelector('[data-role="amt"]');
+    const rateEl = tr.querySelector('.cost-rate-inp');
+    const amtEl  = tr.querySelector('.cost-amt-inp');
     const rate = parseFloat(String(rateEl ? rateEl.value : '1').replace(/[^0-9.]/g,'')) || 1;
     const amt  = parseFloat(String(amtEl  ? amtEl.value  : '0').replace(/[^0-9.]/g,'')) || 0;
     total += rate * amt;
@@ -1255,9 +1257,12 @@ function onAssetAmtInput(input) {
   if (nbv) nbv.value = (acq - depr).toLocaleString();
 }
 function onCostAmtInput(input) {
-  const pos = input.selectionStart;
   const raw = input.value.replace(/[^0-9.]/g, '');
   input.value = raw === '' ? '' : (parseFloat(raw)||0).toLocaleString();
+  // 합계 재계산: 이 row의 rate*amt
+  const tr = input.closest('tr');
+  const rateEl = tr ? tr.querySelector('.cost-rate-inp') : null;
+  const amtEl  = tr ? tr.querySelector('.cost-amt-inp')  : null;
   calcCostTotal();
 }
 function formatNumber(input) {
