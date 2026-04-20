@@ -1290,24 +1290,7 @@ function calcNBV(input) {
   // 실제 값으로도 저장
   inputs[inputs.length-1].dataset.raw = acq - depr;
 }
-function calcCostTotal() {
-  let total = 0;
-  document.querySelectorAll('#dis-cost-rows tr').forEach(tr => {
-    const rate = parseFloat(tr.querySelectorAll('input[type="number"]')[0]?.value) || 1;
-    const amt  = parseFloat(tr.querySelectorAll('input[type="number"]')[1]?.value) || 0;
-    total += rate * amt;
-  });
-  document.getElementById('cost-total').textContent = total ? total.toLocaleString() + ' KRW' : '-';
-  // Selling price 일치 여부 체크
-  const selling = parseFloat((document.getElementById('dis-selling-price').value||'').replace(/,/g,'')) || 0;
-  const repair  = parseFloat(document.getElementById('dis-repair-cost').value) || 0;
-  const notice  = document.getElementById('selling-match-notice');
-  if (total > 0 && selling > 0) {
-    notice.style.display = (Math.abs(total - (selling + repair)) > 1) ? 'block' : 'none';
-  } else {
-    notice.style.display = 'none';
-  }
-}
+
 function formatNumber(input) {
   const raw = input.value.replace(/,/g, '');
   if (!isNaN(raw) && raw !== '') {
