@@ -1093,9 +1093,9 @@ function initAssetRows() {
       '<td><input type="text" placeholder="자산 설명"></td>' +
       '<td><input type="date"></td>' +
       '<td><input type="text" list="cctr-datalist" placeholder="CCTR 검색"></td>' +
-      '<td><input type="text" data-role="acq" placeholder="0" style="text-align:right" oninput="formatNumber(this);calcNBV(this)"></td>' +
-      '<td><input type="text" data-role="depr" placeholder="0" style="text-align:right" oninput="formatNumber(this);calcNBV(this)"></td>' +
-      '<td><input type="text" data-role="nbv" placeholder="0" readonly style="text-align:right;background:#f3f2f1;color:#605e5c"></td>';
+      '<td><input type="text" data-role="acq" placeholder="0" style="text-align:right" oninput="onAssetAmtInput(this)"></td>' +
+      '<td><input type="text" data-role="depr" placeholder="0" style="text-align:right" oninput="onAssetAmtInput(this)"></td>' +
+      '<td><input type="text" data-role="nbv" placeholder="자동계산" readonly style="text-align:right;background:#f3f2f1;color:#605e5c;border:1px solid #d2d0ce;border-radius:4px;padding:6px 8px;font-size:13px"></td>';
     disTbody.appendChild(tr);
   }
 
@@ -1138,8 +1138,8 @@ function addCostRow() {
     '<td><input type="text" placeholder="사유"></td>' +
     '<td><input type="text" list="cctr-datalist" placeholder="CCTR 검색"></td>' +
     '<td><select style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 2px;font-size:11px">' + CURRENCY_OPTIONS_HTML + '</select></td>' +
-    '<td><input type="text" data-role="rate" value="1" style="text-align:right" oninput="formatNumber(this);calcCostTotal()"></td>' +
-    '<td><input type="text" data-role="amt" placeholder="0" style="text-align:right" oninput="formatNumber(this);calcCostTotal()"></td>';
+    '<td><input type="text" data-role="rate" value="1" style="text-align:right" oninput="onCostAmtInput(this)"></td>' +
+    '<td><input type="text" data-role="amt" placeholder="0" style="text-align:right" oninput="onCostAmtInput(this)"></td>';
   document.getElementById('dis-cost-rows').appendChild(tr);
 }
 function onCostTypeChange(sel, rid) {
@@ -1150,16 +1150,7 @@ function onCostTypeChange(sel, rid) {
   else { crCell.textContent = '-'; crCell.style.color = '#605e5c'; }
   calcCostTotal();
 }
-function calcNBV(input) {
-  const tr = input.closest('tr');
-  const acqInput  = tr.querySelector('input[data-role="acq"]');
-  const deprInput = tr.querySelector('input[data-role="depr"]');
-  const nbvInput  = tr.querySelector('input[data-role="nbv"]');
-  if (!acqInput || !deprInput || !nbvInput) return;
-  const acq  = parseFloat(String(acqInput.value  || '').replace(/,/g,'')) || 0;
-  const depr = parseFloat(String(deprInput.value || '').replace(/,/g,'')) || 0;
-  nbvInput.value = (acq - depr).toLocaleString();
-}
+// calcNBV: onAssetAmtInput으로 통합
 function calcCostTotal() {
   let total = 0;
   document.querySelectorAll('#dis-cost-rows tr').forEach(tr => {
@@ -1193,9 +1184,36 @@ function calcCostTotal() {
     notice.style.display = 'none';
   }
 }
+function fmtNum(val) {
+  // 숫자와 점(소수)만 허용, 콤마 제거 후 포맷
+  const raw = String(val).replace(/[^0-9.]/g, '');
+  if (raw === '' || raw === '.') return raw;
+  const num = parseFloat(raw);
+  return isNaN(num) ? '' : num.toLocaleString();
+}
+function parseNum(val) {
+  return parseFloat(String(val).replace(/[^0-9.]/g, '')) || 0;
+}
+function onAssetAmtInput(input) {
+  const pos = input.selectionStart;
+  const raw = input.value.replace(/[^0-9.]/g, '');
+  input.value = raw === '' ? '' : (parseFloat(raw)||0).toLocaleString();
+  // NBV 자동계산
+  const tr = input.closest('tr');
+  const acq  = parseNum(tr.querySelector('[data-role="acq"]')?.value);
+  const depr = parseNum(tr.querySelector('[data-role="depr"]')?.value);
+  const nbv  = tr.querySelector('[data-role="nbv"]');
+  if (nbv) nbv.value = (acq - depr).toLocaleString();
+}
+function onCostAmtInput(input) {
+  const raw = input.value.replace(/[^0-9.]/g, '');
+  input.value = raw === '' ? '' : (parseFloat(raw)||0).toLocaleString();
+  calcCostTotal();
+}
 function formatNumber(input) {
-  const raw = input.value.replace(/,/g, '');
-  if (raw !== '' && !isNaN(raw)) input.value = Number(raw).toLocaleString();
+  // Selling price, Repair cost 등 단독 필드용
+  const raw = input.value.replace(/[^0-9.]/g, '');
+  input.value = raw === '' ? '' : (parseFloat(raw)||0).toLocaleString();
   calcCostTotal();
 }
 function onCostTypeChange(sel) {
