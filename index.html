@@ -1421,17 +1421,25 @@ async function submitRequest(faType) {
         const inputs = tr.querySelectorAll('input');
         console.log('TR', idx, '- inputs count:', inputs.length, '- values:', Array.from(inputs).map(i=>i.value));
         // inputs: [0]=AssetCode, [1]=Description, [2]=date, [3]=CCTR(text), [4]=acqCost, [5]=accDepr, [6]=nbv
-        const code = inputs[0] ? inputs[0].value.trim() : '';
-        const desc = inputs[1] ? inputs[1].value.trim() : '';
+        const textInputs = Array.from(tr.querySelectorAll('input[type="text"]'));
+        const dateInput  = tr.querySelector('input[type="date"]');
+        const code = textInputs[0] ? textInputs[0].value.trim() : '';
+        const desc = textInputs[1] ? textInputs[1].value.trim() : '';
         if (code || desc) {
+          const acqEl  = tr.querySelector('[data-role="acq"]');
+          const deprEl = tr.querySelector('[data-role="depr"]');
+          const nbvEl  = tr.querySelector('[data-role="nbv"]');
+          const cctrEl = textInputs[2];
+          const rawAcq  = (acqEl  ? acqEl.value  : '').replace(/,/g,'');
+          const rawDepr = (deprEl ? deprEl.value : '').replace(/,/g,'');
+          const rawNbv  = (nbvEl  ? nbvEl.value  : '').replace(/,/g,'');
           assetRows.push({
-            code: code,
-            desc: desc,
-            date: inputs[2] ? inputs[2].value : '',
-            cctr: inputs[3] ? inputs[3].value : '',
-            acqCost: inputs[4] ? inputs[4].value : '',
-            accDepr: inputs[5] ? inputs[5].value : '',
-            nbv: inputs[6] ? inputs[6].value : ''
+            code: code, desc: desc,
+            date: dateInput ? dateInput.value : '',
+            cctr: cctrEl ? cctrEl.value : '',
+            acqCost: rawAcq  || '0',
+            accDepr: rawDepr || '0',
+            nbv:     rawNbv  || '0'
           });
         }
       });
@@ -1469,7 +1477,8 @@ async function submitRequest(faType) {
         Location: document.getElementById('dis-location').value,
         DisposalType: document.getElementById('dis-type').value,
         DisposalMethod: document.getElementById('dis-method') ? document.getElementById('dis-method').value : '',
-        SellingPrice: document.getElementById('dis-selling-price').value || '0',
+        SellingPrice: (document.getElementById('dis-selling-price').value || '').replace(/,/g,'') || '0',
+        EstRepairCost: (document.getElementById('dis-repair-cost').value || '').replace(/,/g,'') || '',
         Reason: document.getElementById('dis-reason').value.trim(),
         AssetList: assetRows.length ? JSON.stringify(assetRows) : '',
         CostRevenue: costRows.length ? JSON.stringify(costRows) : '',
@@ -1784,7 +1793,8 @@ async function showDetail(requestId) {
         row('Location', f.Location) +
         row('Type', f.DisposalType) +
         row('Disposal Method', f.DisposalMethod) +
-        row('Selling Price (부가세 제외)', f.SellingPrice ? Number(f.SellingPrice).toLocaleString() + ' 원' : '-') +
+        row('Selling Price (부가세 제외)', f.SellingPrice && f.SellingPrice !== '0' ? Number(String(f.SellingPrice).replace(/,/g,'')).toLocaleString() + ' 원' : '-') +
+        row('Est. Repair Cost', f.EstRepairCost && f.EstRepairCost !== '' ? Number(String(f.EstRepairCost).replace(/,/g,'')).toLocaleString() + ' 원' : '-') +
         row('Reason of Loss / Damage', f.Reason, true);
 
       // 자산 리스트
@@ -1812,9 +1822,9 @@ async function showDetail(requestId) {
             html += sec('2. 처분할 자산 리스트') +
               tbl(['Asset Code','Description','Cap.Date','CCTR','Acq.Cost','Acc.Depr.','NBV'],
                 assets.map(a => [a.code, a.desc, a.date, a.cctr,
-                  a.acqCost ? Number(a.acqCost).toLocaleString() : '-',
-                  a.accDepr ? Number(a.accDepr).toLocaleString() : '-',
-                  a.nbv ? Number(a.nbv).toLocaleString() : '-']));
+                  a.acqCost ? Number(String(a.acqCost).replace(/,/g,'')).toLocaleString() : '-',
+                  a.accDepr ? Number(String(a.accDepr).replace(/,/g,'')).toLocaleString() : '-',
+                  a.nbv ? Number(String(a.nbv).replace(/,/g,'')).toLocaleString() : '-']));
           }
         } catch(e) {}
       }
@@ -1842,6 +1852,24 @@ async function showDetail(requestId) {
               tbl(['C/R','구분','BP Code/Name','사유','CCTR','Currency','환율','금액(FC)'],
                 costs.map(c => [c.cr, c.type, c.bp, c.reason, c.cctr, c.currency, c.rate,
                   c.amount ? Number(c.amount).toLocaleString() : '-']));
+            // 합계 계산 및 일치 여부 표시
+            const costTotal = costs.reduce((sum, c) => {
+              const rate = parseFloat(String(c.rate||'1').replace(/,/g,'')) || 1;
+              const amt  = parseFloat(String(c.amount||'0').replace(/,/g,'')) || 0;
+              return sum + rate * amt;
+            }, 0);
+            const selling  = parseFloat(String(f.SellingPrice||'0').replace(/,/g,'')) || 0;
+            const repair   = parseFloat(String(f.EstRepairCost||'0').replace(/,/g,'')) || 0;
+            const expected = selling + repair;
+            const totalStr = costTotal ? costTotal.toLocaleString() + ' KRW' : '-';
+            html += '<div style="text-align:right;padding:4px 8px;font-size:12px;color:#0078d4;font-weight:600">합계 (KRW 환산): ' + totalStr + '</div>';
+            if (expected > 0 && costTotal > 0) {
+              if (costTotal === expected) {
+                html += '<div style="margin-top:4px;padding:6px 10px;font-size:11px;color:#107c10;background:#e8f5e8;border-radius:4px;border:1px solid #c3e6c3">✅ 합계금액이 Selling Price + Est.Repair Cost와 일치합니다.</div>';
+              } else {
+                html += '<div style="margin-top:4px;padding:6px 10px;font-size:11px;color:#a4262c;background:#fdf3f3;border-radius:4px;border:1px solid #f4c6c6">Selling price 또는 Est.Repair cost가 있는 경우 3. 추가 비용/수익의 합계금액과 일치해야 합니다.</div>';
+              }
+            }
           }
         } catch(e) {}
       }
