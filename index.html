@@ -1206,8 +1206,10 @@ function onCostTypeChange(sel, rid) {
 function calcCostTotal() {
   let total = 0;
   document.querySelectorAll('#dis-cost-rows tr').forEach(tr => {
-    const rateEl = tr.querySelector('.cost-rate-inp');
-    const amtEl  = tr.querySelector('.cost-amt-inp');
+    const tds = tr.querySelectorAll('td');
+    if (tds.length < 8) return;
+    const rateEl = tds[6].querySelector('input');
+    const amtEl  = tds[7].querySelector('input');
     const rate = parseFloat(String(rateEl ? rateEl.value : '1').replace(/[^0-9.]/g,'')) || 1;
     const amt  = parseFloat(String(amtEl  ? amtEl.value  : '0').replace(/[^0-9.]/g,'')) || 0;
     total += rate * amt;
