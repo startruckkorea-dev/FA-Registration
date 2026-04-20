@@ -1127,19 +1127,69 @@ function addCostRow() {
   const rid = costRowCount;
   const tr = document.createElement('tr');
   tr.id = 'cost-row-' + rid;
-  tr.innerHTML =
-    '<td id="cr-' + rid + '" style="text-align:center;font-weight:600;color:#605e5c">-</td>' +
-    '<td><select style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px;font-size:12px" onchange="onCostTypeChange(this,' + rid + ')">' +
-      '<option value="">-- 선택 --</option>' +
-      '<option value="처분비용">처분비용</option>' +
-      '<option value="매각금액">매각금액</option>' +
-    '</select></td>' +
-    '<td><input type="text" placeholder="BP Code / Name"></td>' +
-    '<td><input type="text" placeholder="사유"></td>' +
-    '<td><input type="text" list="cctr-datalist" placeholder="CCTR 검색"></td>' +
-    '<td><select style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 2px;font-size:11px">' + CURRENCY_OPTIONS_HTML + '</select></td>' +
-    '<td><input type="text" data-role="rate" value="1" style="text-align:right" oninput="onCostAmtInput(this)"></td>' +
-    '<td><input type="text" data-role="amt" placeholder="0" style="text-align:right" oninput="onCostAmtInput(this)"></td>';
+
+  // C/R 셀
+  const tdCR = document.createElement('td');
+  tdCR.id = 'cr-' + rid;
+  tdCR.style.cssText = 'text-align:center;font-weight:600;color:#605e5c';
+  tdCR.textContent = '-';
+
+  // 구분 드롭박스
+  const tdType = document.createElement('td');
+  const sel = document.createElement('select');
+  sel.style.cssText = 'width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px;font-size:12px';
+  sel.onchange = function() { onCostTypeChange(this, rid); };
+  [['', '-- 선택 --'], ['처분비용', '처분비용'], ['매각금액', '매각금액']].forEach(([v, t]) => {
+    const opt = document.createElement('option'); opt.value = v; opt.textContent = t; sel.appendChild(opt);
+  });
+  tdType.appendChild(sel);
+
+  // BP Code/Name
+  const tdBP = document.createElement('td');
+  const inpBP = document.createElement('input');
+  inpBP.type = 'text'; inpBP.placeholder = 'BP Code / Name';
+  tdBP.appendChild(inpBP);
+
+  // 사유
+  const tdReason = document.createElement('td');
+  const inpReason = document.createElement('input');
+  inpReason.type = 'text'; inpReason.placeholder = '사유';
+  tdReason.appendChild(inpReason);
+
+  // CCTR
+  const tdCCTR = document.createElement('td');
+  const inpCCTR = document.createElement('input');
+  inpCCTR.type = 'text'; inpCCTR.setAttribute('list', 'cctr-datalist'); inpCCTR.placeholder = 'CCTR 검색';
+  tdCCTR.appendChild(inpCCTR);
+
+  // Currency
+  const tdCurr = document.createElement('td');
+  const selCurr = document.createElement('select');
+  selCurr.style.cssText = 'width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 2px;font-size:11px';
+  selCurr.innerHTML = CURRENCY_OPTIONS_HTML;
+  tdCurr.appendChild(selCurr);
+
+  // 환율 (data-role="rate")
+  const tdRate = document.createElement('td');
+  const inpRate = document.createElement('input');
+  inpRate.type = 'text';
+  inpRate.setAttribute('data-role', 'rate');
+  inpRate.value = '1';
+  inpRate.style.cssText = 'text-align:right;width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:12px';
+  inpRate.oninput = function() { onCostAmtInput(this); };
+  tdRate.appendChild(inpRate);
+
+  // 금액(FC) (data-role="amt")
+  const tdAmt = document.createElement('td');
+  const inpAmt = document.createElement('input');
+  inpAmt.type = 'text';
+  inpAmt.setAttribute('data-role', 'amt');
+  inpAmt.placeholder = '0';
+  inpAmt.style.cssText = 'text-align:right;width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 6px;font-size:12px';
+  inpAmt.oninput = function() { onCostAmtInput(this); };
+  tdAmt.appendChild(inpAmt);
+
+  [tdCR, tdType, tdBP, tdReason, tdCCTR, tdCurr, tdRate, tdAmt].forEach(td => tr.appendChild(td));
   document.getElementById('dis-cost-rows').appendChild(tr);
 }
 function onCostTypeChange(sel, rid) {
@@ -1154,17 +1204,10 @@ function onCostTypeChange(sel, rid) {
 function calcCostTotal() {
   let total = 0;
   document.querySelectorAll('#dis-cost-rows tr').forEach(tr => {
-    // 모든 text input 중 data-role로 찾기 (속성값 정확히 매칭)
-    let rateEl = null, amtEl = null;
-    tr.querySelectorAll('input[type="text"]').forEach(inp => {
-      const role = inp.getAttribute('data-role');
-      if (role === 'rate') rateEl = inp;
-      if (role === 'amt')  amtEl  = inp;
-    });
-    const rateRaw = rateEl ? String(rateEl.value).replace(/[^0-9.]/g,'') : '1';
-    const amtRaw  = amtEl  ? String(amtEl.value).replace(/[^0-9.]/g,'')  : '0';
-    const rate = parseFloat(rateRaw) || 1;
-    const amt  = parseFloat(amtRaw)  || 0;
+    const rateEl = tr.querySelector('[data-role="rate"]');
+    const amtEl  = tr.querySelector('[data-role="amt"]');
+    const rate = parseFloat(String(rateEl ? rateEl.value : '1').replace(/[^0-9.]/g,'')) || 1;
+    const amt  = parseFloat(String(amtEl  ? amtEl.value  : '0').replace(/[^0-9.]/g,'')) || 0;
     total += rate * amt;
   });
   const el = document.getElementById('cost-total');
