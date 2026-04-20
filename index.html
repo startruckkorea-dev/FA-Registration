@@ -1971,6 +1971,30 @@ async function loadAdminList() {
   } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
+// ── 파일 열기: Graph API downloadUrl → 새 탭 ──
+document.addEventListener('click', async function(e) {
+  const link = e.target.closest('.file-dl-link');
+  if (!link) return;
+  e.preventDefault();
+  const itemId  = decodeURIComponent(link.getAttribute('data-id')   || '');
+  const driveId = decodeURIComponent(link.getAttribute('data-drive') || '');
+  if (!itemId || !driveId) { alert('파일 정보가 없습니다.'); return; }
+  loading(true);
+  try {
+    const t = await token();
+    const res = await fetch(
+      GRAPH + '/drives/' + driveId + '/items/' + itemId,
+      { headers: { Authorization: 'Bearer ' + t } }
+    );
+    if (!res.ok) throw new Error('파일 정보 조회 실패 (' + res.status + ')');
+    const data = await res.json();
+    const dlUrl = data['@microsoft.graph.downloadUrl'] || data.webUrl;
+    if (!dlUrl) throw new Error('다운로드 URL을 가져올 수 없습니다.');
+    window.open(dlUrl, '_blank');
+  } catch(err) { alert('파일 열기 오류: ' + err.message); }
+  finally { loading(false); }
+});
+
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
 function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
 function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
