@@ -1450,23 +1450,27 @@ async function submitRequest(faType) {
       const costTrs = document.querySelectorAll('#dis-cost-rows tr');
       console.log('Cost TRs found:', costTrs.length);
       costTrs.forEach(tr => {
-        const selects = tr.querySelectorAll('select');
-        const inputs = tr.querySelectorAll('input');
-        const crVal = selects[0] ? selects[0].value : 'C';
-        const currVal = selects[1] ? selects[1].value : 'KRW';
-        // inputs: [0]=type/구분, [1]=bp, [2]=reason/사유, [3]=cctr, [4]=rate, [5]=amount
-        const typeVal = inputs[0] ? inputs[0].value.trim() : '';
-        const amountVal = inputs[5] ? inputs[5].value : '';
-        if (typeVal || amountVal) {
+        // td 구조: [0]=C/R, [1]=구분select, [2]=BP, [3]=사유, [4]=CCTR, [5]=Currency, [6]=환율, [7]=금액
+        const tds = tr.querySelectorAll('td');
+        if (tds.length < 8) return;
+        const crCell  = tds[0].textContent.trim();
+        const typeVal = tds[1].querySelector('select')?.value || '';
+        const bp      = tds[2].querySelector('input')?.value || '';
+        const reason  = tds[3].querySelector('input')?.value || '';
+        const cctr    = tds[4].querySelector('input')?.value || '';
+        const curr    = tds[5].querySelector('select')?.value || 'KRW';
+        const rateRaw = (tds[6].querySelector('input')?.value || '1').replace(/,/g,'');
+        const amtRaw  = (tds[7].querySelector('input')?.value || '').replace(/,/g,'');
+        if (typeVal || amtRaw) {
           costRows.push({
-            cr: crVal,
+            cr: crCell || '-',
             type: typeVal,
-            bp: inputs[1] ? inputs[1].value : '',
-            reason: inputs[2] ? inputs[2].value : '',
-            cctr: inputs[3] ? inputs[3].value : '',
-            currency: currVal,
-            rate: inputs[4] ? inputs[4].value : '1',
-            amount: amountVal
+            bp: bp,
+            reason: reason,
+            cctr: cctr,
+            currency: curr,
+            rate: rateRaw || '1',
+            amount: amtRaw || '0'
           });
         }
       });
@@ -1854,12 +1858,19 @@ async function showDetail(requestId) {
           if (costs.length) {
             html += sec('3. 추가 비용/수익') +
               tbl(['C/R','구분','BP Code/Name','사유','CCTR','Currency','환율','금액(FC)'],
-                costs.map(c => [c.cr, c.type, c.bp, c.reason, c.cctr, c.currency, c.rate,
-                  c.amount ? Number(c.amount).toLocaleString() : '-']));
+                costs.map(c => [
+                  c.cr || '-',
+                  c.type || '-',
+                  c.bp || '-',
+                  c.reason || '-',
+                  c.cctr || '-',
+                  c.currency || 'KRW',
+                  c.rate ? Number(String(c.rate).replace(/,/g,'')).toLocaleString() : '1',
+                  c.amount ? Number(String(c.amount).replace(/,/g,'')).toLocaleString() : '-']));
             // 합계 계산 및 일치 여부 표시
             const costTotal = costs.reduce((sum, c) => {
-              const rate = parseFloat(String(c.rate||'1').replace(/,/g,'')) || 1;
-              const amt  = parseFloat(String(c.amount||'0').replace(/,/g,'')) || 0;
+              const rate = parseFloat(String(c.rate  ||'1').replace(/[^0-9.]/g,'')) || 1;
+              const amt  = parseFloat(String(c.amount||'0').replace(/[^0-9.]/g,'')) || 0;
               return sum + rate * amt;
             }, 0);
             const spParts2 = String(f.SellingPrice||'0').split('|');
