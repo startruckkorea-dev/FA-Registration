@@ -1228,7 +1228,7 @@ function calcCostTotal() {
     const diff = Math.abs(total - expected);
     if (diff <= 1) {
       notice.style.cssText = 'display:block;font-size:11px;margin-top:4px;color:#107c10;background:#e8f5e8;padding:6px 10px;border-radius:4px;border:1px solid #c3e6c3';
-      notice.textContent = '✅ 합계금액이 Selling Price와 일치합니다.';
+      notice.textContent = '✅ 합계금액이 Selling Price + Est.Repair Cost와 일치합니다.';
     } else {
       notice.style.cssText = 'display:block;font-size:11px;margin-top:4px;color:#a4262c;background:#fdf3f3;padding:6px 10px;border-radius:4px;border:1px solid #f4c6c6';
       notice.textContent = 'Selling price 또는 Est.Repair cost가 있는 경우 3. 추가 비용/수익의 합계금액과 일치해야 합니다.';
