@@ -212,6 +212,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 <option value="(47900745) IT Application">(47900745) IT Application [IT]</option>
 <option value="(47900755) IT Infrastructure">(47900755) IT Infrastructure [IT]</option>
           </select>
+          <div style="font-size:11px;color:#605e5c;margin-top:4px">※ 사업부 소속이 아닌 STK 직원의 경우 소속된 CCTR을 선택해주세요.</div>
         </div>
         <div class="form-group">
           <label>Type <span class="req">*</span></label>
@@ -342,13 +343,22 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
 
-      <div class="section-title">4. 첨부파일</div>
+      <div class="section-title">4. 첨부파일 <span style="color:#a4262c">*</span></div>
+      <div style="font-size:11px;color:#605e5c;margin-bottom:8px">필수첨부파일: 고정자산구입처, 운송업체 등 다수의 업체가 있는 경우 모든 세금계산서 및 인보이스를 첨부해주세요.</div>
       <div class="file-area" onclick="document.getElementById('reg-file-input').click()">
         <input type="file" id="reg-file-input" multiple onchange="onFileSelect(event,'reg')">
         <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
       </div>
       <div class="file-list" id="reg-file-list"></div>
       <div id="reg-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
+
+      <div class="section-title">5. 비고 (Remarks)</div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>비고</label>
+          <textarea id="reg-remark" placeholder="기타 특이사항이 있으면 기재해주세요." style="min-height:70px"></textarea>
+        </div>
+      </div>
 
       <div class="btn-row">
         <button class="btn-secondary" onclick="resetRegForm()">초기화</button>
@@ -410,16 +420,18 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
         <div class="form-group">
           <label>Selling Price (부가세 제외)</label>
-          <input type="number" id="dis-selling-price" placeholder="매각금액 (매각 시 입력)">
+          <input type="text" id="dis-selling-price" placeholder="매각금액 (매각 시 입력)" oninput="formatNumber(this)">
+          <div style="font-size:11px;color:#605e5c;margin-top:3px">※ 처분비용 및 매각금액 합계와 일치해야 합니다.</div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Disposal Method <span class="auto-tag">자동</span></label>
-          <select id="dis-method" style="background:#f3f2f1">
+          <select id="dis-method">
             <option value="">Type 선택 시 자동 설정</option>
             <option value="Immediate Disposal">Immediate Disposal</option>
             <option value="Disposal">Disposal</option>
+            <option value="Resales">Resales</option>
             <option value="Non-Repairable">Non-Repairable</option>
             <option value="Repairable">Repairable</option>
           </select>
@@ -459,7 +471,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <table class="fa-table">
           <thead><tr>
             <th style="width:44px">C/R</th>
-            <th style="min-width:110px">구분</th>
+            <th style="min-width:130px">구분</th>
             <th style="min-width:130px">BP Code/Name</th>
             <th style="min-width:110px">사유</th>
             <th style="min-width:160px">CCTR</th>
@@ -468,8 +480,15 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
             <th style="min-width:90px">금액(FC)</th>
           </tr></thead>
           <tbody id="dis-cost-rows"></tbody>
+          <tfoot>
+            <tr style="background:#f3f2f1;font-weight:600">
+              <td colspan="6" style="text-align:right;padding:6px 8px;font-size:12px">합계 (KRW 환산)</td>
+              <td colspan="2" id="cost-total" style="padding:6px 8px;font-size:12px;color:#0078d4">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
+      <div id="selling-match-notice" style="display:none;font-size:11px;color:#a4262c;margin-top:4px">⚠️ 합계금액이 Selling Price + Est.Repair Cost와 일치하지 않습니다. 확인 후 다시 시도해주세요.</div>
       <button class="btn-secondary" style="font-size:12px;padding:4px 12px;margin-top:6px" onclick="addCostRow()">+ 행 추가</button>
 
       <div class="section-title">4. 결재자 지정</div>
@@ -505,7 +524,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
 
-      <div class="section-title">5. 첨부파일</div>
+      <div class="section-title">5. 첨부파일 <span style="color:#a4262c">*</span></div>
+      <div style="font-size:11px;color:#605e5c;margin-bottom:8px">처분 및 매각할 자산의 사진이 첨부되었는지 다시 한번 확인해주세요.</div>
       <div class="file-area" onclick="document.getElementById('dis-file-input').click()">
         <input type="file" id="dis-file-input" multiple onchange="onFileSelect(event,'dis')">
         <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
@@ -704,8 +724,10 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div id="tfr-asset-rows"></div>
 
       <div class="section-title">3. 결재자 지정</div>
+      <div style="font-size:11px;color:#605e5c;margin-bottom:8px">※ 이동 전/이동 후 부서 결재자를 각각 지정해주세요.</div>
+      <div style="font-size:12px;font-weight:600;color:#1F4E79;margin-bottom:6px">▶ 이동 전 부서 결재자</div>
       <div class="appr-block">
-        <div class="appr-title">1차 결재자 <span style="color:#a4262c;font-size:11px">*</span> <span style="font-size:11px;color:#605e5c;font-weight:400">— Line Manager (팀장)</span></div>
+        <div class="appr-title">1차 결재자 <span style="color:#a4262c;font-size:11px">*</span> <span style="font-size:11px;color:#605e5c;font-weight:400">— 이동 전 부서 Line Manager (팀장)</span></div>
         <div class="appr-grid">
           <select id="tfr-a1-dept" onchange="onDeptChange(1,'tfr')"><option value="">부서</option></select>
           <select id="tfr-a1-team" onchange="onTeamChange(1,'tfr')" disabled><option value="">팀</option></select>
@@ -717,7 +739,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
       <div class="appr-block">
-        <div class="appr-title">2차 결재자 <span style="font-size:11px;color:#605e5c;font-weight:400">— Department Head (부서장)</span></div>
+        <div class="appr-title">2차 결재자 <span style="font-size:11px;color:#605e5c;font-weight:400">— 이동 전 부서 Department Head (부서장)</span></div>
         <div class="appr-grid">
           <select id="tfr-a2-dept" onchange="onDeptChange(2,'tfr')"><option value="">부서</option></select>
           <select id="tfr-a2-team" onchange="onTeamChange(2,'tfr')" disabled><option value="">팀</option></select>
@@ -728,6 +750,31 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
           <input type="email" id="tfr-a2-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
         </div>
       </div>
+      <div style="font-size:12px;font-weight:600;color:#1F4E79;margin:12px 0 6px">▶ 이동 후 부서 결재자</div>
+      <div class="appr-block">
+        <div class="appr-title">3차 결재자 <span style="color:#a4262c;font-size:11px">*</span> <span style="font-size:11px;color:#605e5c;font-weight:400">— 이동 후 부서 Line Manager (팀장)</span></div>
+        <div class="appr-grid">
+          <select id="tfr-a3-dept" onchange="onDeptChange(3,'tfr')"><option value="">부서</option></select>
+          <select id="tfr-a3-team" onchange="onTeamChange(3,'tfr')" disabled><option value="">팀</option></select>
+          <select id="tfr-a3-person" onchange="onPersonChange(3,'tfr')" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="tfr-a3-name" readonly placeholder="이름" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+          <input type="email" id="tfr-a3-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+        </div>
+      </div>
+      <div class="appr-block">
+        <div class="appr-title">4차 결재자 <span style="font-size:11px;color:#605e5c;font-weight:400">— 이동 후 부서 Department Head (부서장)</span></div>
+        <div class="appr-grid">
+          <select id="tfr-a4-dept" onchange="onDeptChange(4,'tfr')"><option value="">부서</option></select>
+          <select id="tfr-a4-team" onchange="onTeamChange(4,'tfr')" disabled><option value="">팀</option></select>
+          <select id="tfr-a4-person" onchange="onPersonChange(4,'tfr')" disabled><option value="">직원 선택</option></select>
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <input type="text" id="tfr-a4-name" readonly placeholder="이름" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+          <input type="email" id="tfr-a4-email" readonly placeholder="이메일" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1">
+        </div>
+      </div>
       <div class="appr-block">
         <div class="appr-title">회계담당자 (자동 지정)</div>
         <div class="form-row">
@@ -736,7 +783,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
       </div>
 
-      <div class="section-title">4. 첨부파일</div>
+      <div class="section-title">4. 첨부파일 <span style="color:#a4262c">*</span></div>
+      <div style="font-size:11px;color:#605e5c;margin-bottom:8px">이동할 자산의 사진을 첨부해주세요.</div>
       <div class="file-area" onclick="document.getElementById('tfr-file-input').click()">
         <input type="file" id="tfr-file-input" multiple onchange="onFileSelect(event,'tfr')">
         <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
@@ -1011,25 +1059,24 @@ function onDisposalTypeChange() {
   const methodSel = document.getElementById('dis-method');
   const repairCost = document.getElementById('dis-repair-cost');
 
+  // 옵션 초기화 후 해당 type에 맞는 옵션만 표시
+  methodSel.innerHTML = '<option value="">-- 선택 --</option>';
+
   if (type === '분실(Lost)') {
+    methodSel.innerHTML += '<option value="Immediate Disposal">Immediate Disposal</option>';
     methodSel.value = 'Immediate Disposal';
-    methodSel.style.background = '#fff4ce';
-    repairCost.disabled = true;
-    repairCost.value = '';
+    repairCost.disabled = true; repairCost.value = '';
   } else if (type === '미사용(No need to use)') {
+    methodSel.innerHTML += '<option value="Disposal">Disposal (기본)</option><option value="Resales">Resales</option>';
     methodSel.value = 'Disposal';
-    methodSel.style.background = '#fff4ce';
-    repairCost.disabled = true;
-    repairCost.value = '';
+    repairCost.disabled = true; repairCost.value = '';
   } else if (type === '손상(Damaged)') {
+    methodSel.innerHTML += '<option value="Non-Repairable">Non-Repairable (기본)</option><option value="Repairable">Repairable</option>';
     methodSel.value = 'Non-Repairable';
-    methodSel.style.background = '#fff4ce';
     repairCost.disabled = false;
   } else {
-    methodSel.value = '';
-    methodSel.style.background = '#f3f2f1';
-    repairCost.disabled = true;
-    repairCost.value = '';
+    methodSel.innerHTML = '<option value="">Type 선택 시 자동 설정</option>';
+    repairCost.disabled = true; repairCost.value = '';
   }
 }
 
@@ -1046,9 +1093,9 @@ function initAssetRows() {
       '<td><input type="text" placeholder="자산 설명"></td>' +
       '<td><input type="date"></td>' +
       '<td><input type="text" list="cctr-datalist" placeholder="CCTR 검색"></td>' +
-      '<td><input type="number" placeholder="0"></td>' +
-      '<td><input type="number" placeholder="0"></td>' +
-      '<td><input type="number" placeholder="0" readonly></td>';
+      '<td><input type="number" placeholder="0" oninput="calcNBV(this)"></td>' +
+      '<td><input type="number" placeholder="0" oninput="calcNBV(this)"></td>' +
+      '<td><input type="number" placeholder="0" readonly style="background:#f3f2f1;color:#605e5c"></td>';
     disTbody.appendChild(tr);
   }
 
@@ -1077,18 +1124,98 @@ function initAssetRows() {
 let costRowCount = 0;
 function addCostRow() {
   costRowCount++;
+  const rid = costRowCount;
   const tr = document.createElement('tr');
-  tr.id = 'cost-row-' + costRowCount;
+  tr.id = 'cost-row-' + rid;
   tr.innerHTML =
-    '<td><select style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 4px;font-size:12px"><option value="C">C</option><option value="R">R</option></select></td>' +
-    '<td><input type="text" placeholder="처분비용/매각금액"></td>' +
+    '<td id="cr-' + rid + '" style="text-align:center;font-weight:600;color:#605e5c">-</td>' +
+    '<td><select style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px;font-size:12px" onchange="onCostTypeChange(this,' + rid + ')">' +
+      '<option value="">-- 선택 --</option>' +
+      '<option value="처분비용">처분비용</option>' +
+      '<option value="매각금액">매각금액</option>' +
+    '</select></td>' +
     '<td><input type="text" placeholder="BP Code / Name"></td>' +
     '<td><input type="text" placeholder="사유"></td>' +
     '<td><input type="text" list="cctr-datalist" placeholder="CCTR 검색"></td>' +
     '<td><select style="width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px 2px;font-size:11px">' + CURRENCY_OPTIONS_HTML + '</select></td>' +
-    '<td><input type="number" value="1"></td>' +
-    '<td><input type="number" placeholder="0"></td>';
+    '<td><input type="number" value="1" oninput="calcCostTotal()"></td>' +
+    '<td><input type="number" placeholder="0" oninput="calcCostTotal()"></td>';
   document.getElementById('dis-cost-rows').appendChild(tr);
+}
+function onCostTypeChange(sel, rid) {
+  const crCell = document.getElementById('cr-' + rid);
+  if (!crCell) return;
+  if (sel.value === '처분비용') { crCell.textContent = 'C'; crCell.style.color = '#a4262c'; }
+  else if (sel.value === '매각금액') { crCell.textContent = 'R'; crCell.style.color = '#107c10'; }
+  else { crCell.textContent = '-'; crCell.style.color = '#605e5c'; }
+  calcCostTotal();
+}
+function calcNBV(input) {
+  const cells = Array.from(input.closest('tr').querySelectorAll('input[type="number"]'));
+  const acq  = parseFloat(cells[cells.length - 3]?.value) || 0;
+  const depr = parseFloat(cells[cells.length - 2]?.value) || 0;
+  cells[cells.length - 1].value = acq - depr;
+}
+function calcCostTotal() {
+  let total = 0;
+  document.querySelectorAll('#dis-cost-rows tr').forEach(tr => {
+    const nums = tr.querySelectorAll('input[type="number"]');
+    const rate = parseFloat(nums[0]?.value) || 1;
+    const amt  = parseFloat(nums[1]?.value) || 0;
+    total += rate * amt;
+  });
+  const el = document.getElementById('cost-total');
+  if (el) el.textContent = total ? total.toLocaleString() + ' KRW' : '-';
+  const selling = parseFloat((document.getElementById('dis-selling-price')?.value || '').replace(/,/g,'')) || 0;
+  const repair  = parseFloat(document.getElementById('dis-repair-cost')?.value) || 0;
+  const notice  = document.getElementById('selling-match-notice');
+  if (notice) notice.style.display = (total > 0 && selling > 0 && Math.abs(total - (selling + repair)) > 1) ? 'block' : 'none';
+}
+function formatNumber(input) {
+  const raw = input.value.replace(/,/g, '');
+  if (raw !== '' && !isNaN(raw)) input.value = Number(raw).toLocaleString();
+  calcCostTotal();
+}
+function onCostTypeChange(sel) {
+  const row = sel.closest('tr');
+  const crCell = row.querySelector('td:first-child');
+  if (sel.value === '처분비용') { crCell.textContent = 'C'; crCell.style.color = '#a4262c'; }
+  else if (sel.value === '매각금액') { crCell.textContent = 'R'; crCell.style.color = '#107c10'; }
+  else { crCell.textContent = '-'; crCell.style.color = '#0078d4'; }
+  calcCostTotal();
+}
+function calcNBV(input) {
+  const row = input.closest('tr');
+  const inputs = row.querySelectorAll('input[type="number"]');
+  const acq = parseFloat(inputs[inputs.length-3].value) || 0;
+  const depr = parseFloat(inputs[inputs.length-2].value) || 0;
+  inputs[inputs.length-1].value = (acq - depr).toLocaleString();
+  // 실제 값으로도 저장
+  inputs[inputs.length-1].dataset.raw = acq - depr;
+}
+function calcCostTotal() {
+  let total = 0;
+  document.querySelectorAll('#dis-cost-rows tr').forEach(tr => {
+    const rate = parseFloat(tr.querySelectorAll('input[type="number"]')[0]?.value) || 1;
+    const amt  = parseFloat(tr.querySelectorAll('input[type="number"]')[1]?.value) || 0;
+    total += rate * amt;
+  });
+  document.getElementById('cost-total').textContent = total ? total.toLocaleString() + ' KRW' : '-';
+  // Selling price 일치 여부 체크
+  const selling = parseFloat((document.getElementById('dis-selling-price').value||'').replace(/,/g,'')) || 0;
+  const repair  = parseFloat(document.getElementById('dis-repair-cost').value) || 0;
+  const notice  = document.getElementById('selling-match-notice');
+  if (total > 0 && selling > 0) {
+    notice.style.display = (Math.abs(total - (selling + repair)) > 1) ? 'block' : 'none';
+  } else {
+    notice.style.display = 'none';
+  }
+}
+function formatNumber(input) {
+  const raw = input.value.replace(/,/g, '');
+  if (!isNaN(raw) && raw !== '') {
+    input.value = Number(raw).toLocaleString();
+  }
 }
 
 
@@ -1291,7 +1418,7 @@ async function submitRequest(faType) {
           if (res.ok) {
             const u = await res.json();
             console.log('Upload success:', file.name, u.webUrl);
-            fileLinks.push(file.name + '||' + drive.id + '||' + u.id);
+            fileLinks.push(file.name + '|' + (u.webUrl || ''));
           } else {
             const errText = await res.text();
             console.error('Upload failed:', res.status, errText);
@@ -1358,10 +1485,8 @@ function resetTransferForm() {
 
 // ── LISTS ──
 function fmtDate(iso) {
-  if (!iso) return '';
   const d = new Date(iso);
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
-    ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
 async function loadMyList() {
@@ -1396,9 +1521,9 @@ async function loadApprovalQueue() {
   const tbody = document.getElementById('appr-body');
   try {
     const data = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
-    const mine = data.value
-      .filter(i => (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기')
-      .sort((a, b) => b.fields.RequestID - a.fields.RequestID);  // 최신(높은 번호)순 정렬
+    const mine = data.value.filter(i =>
+      (i.fields.ApproverEmail||'').toLowerCase() === user.username.toLowerCase() && i.fields.Status === '대기'
+    );
     if (!mine.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c">결재 대기 항목이 없습니다.</td></tr>'; return; }
     const rows = await Promise.all(mine.map(async item => {
       const f = item.fields;
@@ -1463,23 +1588,11 @@ async function showDetail(requestId) {
     // ── 첨부파일 ──
     let filesHtml = '<div style="font-size:13px;color:#605e5c">첨부파일 없음</div>';
     if (f.AttachedFiles) {
-      const fileEntries = f.AttachedFiles
-        .replace(/&#58;/g,':').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<[^>]*>/g,'')
-        .split(';').filter(e => e.trim());
-      filesHtml = fileEntries.map(entry => {
-        const name = entry.split('|')[0].trim();
-        if (!name) return '';
-        // 새 형식: name||driveId||itemId
-        const newFmt = entry.split('||');
-        if (newFmt.length === 3) {
-          const driveId = newFmt[1].trim();
-          const itemId  = newFmt[2].trim();
-          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + '</a></div>';
-        }
-        // 구 형식: name|webUrl
-        const parts = entry.split('|');
-        const url = parts[1] ? parts[1].trim() : '';
-        if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + '</div>';
+      filesHtml = f.AttachedFiles.split(';').map(entry => {
+        const pi = entry.indexOf('|'); if (pi === -1) return '';
+        const name = entry.slice(0, pi).trim();
+        let url = entry.slice(pi + 1).trim();
+        if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + ' (링크 없음)</div>';
         return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
       }).filter(Boolean).join('');
     }
@@ -1687,29 +1800,6 @@ async function loadAdminList() {
   } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
-// ── 파일 열기: Graph API downloadUrl → 새 탭 ──
-document.addEventListener('click', async function(e) {
-  const link = e.target.closest('.file-dl-link');
-  if (!link) return;
-  e.preventDefault();
-  const itemId  = decodeURIComponent(link.getAttribute('data-id')   || '');
-  const driveId = decodeURIComponent(link.getAttribute('data-drive') || '');
-  if (!itemId || !driveId) { alert('파일 정보가 없습니다.'); return; }
-  loading(true);
-  try {
-    const t = await token();
-    const res = await fetch(
-      GRAPH + '/drives/' + driveId + '/items/' + itemId,
-      { headers: { Authorization: 'Bearer ' + t } }
-    );
-    if (!res.ok) throw new Error('파일 정보 조회 실패 (' + res.status + ')');
-    const data = await res.json();
-    const dlUrl = data['@microsoft.graph.downloadUrl'] || data.webUrl;
-    if (!dlUrl) throw new Error('다운로드 URL을 가져올 수 없습니다.');
-    window.open(dlUrl, '_blank');
-  } catch(err) { alert('파일 열기 오류: ' + err.message); }
-  finally { loading(false); }
-});
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
 function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
 function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
