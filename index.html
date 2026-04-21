@@ -1290,7 +1290,18 @@ function onAssetAmtInput(input) {
   const acq  = parseNum(tr.querySelector('[data-role="acq"]')?.value);
   const depr = parseNum(tr.querySelector('[data-role="depr"]')?.value);
   const nbv  = tr.querySelector('[data-role="nbv"]');
-  if (nbv) nbv.value = (acq - depr).toLocaleString();
+  if (nbv) {
+    const nbvVal = acq - depr;
+    if (nbvVal < 0) {
+      nbv.value = '(' + Math.abs(nbvVal).toLocaleString() + ')';
+      nbv.style.color = '#a4262c';
+      nbv.dataset.raw = nbvVal;
+    } else {
+      nbv.value = nbvVal.toLocaleString();
+      nbv.style.color = '#605e5c';
+      nbv.dataset.raw = nbvVal;
+    }
+  }
   // NBV 합계 재계산
   calcNbvTotal();
 }
@@ -1300,13 +1311,24 @@ function calcNbvTotal() {
   document.querySelectorAll('#dis-asset-rows tr').forEach(tr => {
     const nbvEl = tr.querySelector('[data-role="nbv"]');
     if (nbvEl && nbvEl.value) {
-      const val = parseNum(nbvEl.value);
+      // dataset.raw에 실제 숫자값 저장되어 있으면 사용, 없으면 value 파싱
+      const val = nbvEl.dataset.raw !== undefined && nbvEl.dataset.raw !== ''
+        ? parseFloat(nbvEl.dataset.raw) || 0
+        : parseFloat(nbvEl.value.replace(/[^0-9.]/g,'')) || 0;
       total += val;
       if (val !== 0) hasValue = true;
     }
   });
   const el = document.getElementById('nbv-total');
-  if (el) el.textContent = hasValue ? total.toLocaleString() + ' KRW' : '-';
+  if (!el) return;
+  if (!hasValue) { el.textContent = '-'; el.style.color = '#0078d4'; return; }
+  if (total < 0) {
+    el.textContent = '(' + Math.abs(total).toLocaleString() + ') KRW';
+    el.style.color = '#a4262c';
+  } else {
+    el.textContent = total.toLocaleString() + ' KRW';
+    el.style.color = '#0078d4';
+  }
 }
 function onCostAmtInput(input) {
   const raw = input.value.replace(/[^0-9.]/g, '');
@@ -1876,7 +1898,11 @@ async function showDetail(requestId) {
                   a.nbv ? Number(String(a.nbv).replace(/,/g,'')).toLocaleString() : '-']));
             // NBV 합계
             const nbvTotal = assets.reduce((sum, a) => sum + (parseFloat(String(a.nbv||'0').replace(/,/g,'')) || 0), 0);
-            html += '<div style="text-align:right;padding:4px 8px;font-size:12px;color:#0078d4;font-weight:600;background:#f3f2f1;border-radius:0 0 4px 4px;margin-top:-1px">합계 (NBV): ' + (nbvTotal ? nbvTotal.toLocaleString() + ' KRW' : '-') + '</div>';
+            const nbvTotalStr = nbvTotal === 0 ? '-'
+              : nbvTotal < 0 ? '(' + Math.abs(nbvTotal).toLocaleString() + ') KRW'
+              : nbvTotal.toLocaleString() + ' KRW';
+            const nbvTotalColor = nbvTotal < 0 ? '#a4262c' : '#0078d4';
+            html += '<div style="text-align:right;padding:4px 8px;font-size:12px;color:' + nbvTotalColor + ';font-weight:600;background:#f3f2f1;border-radius:0 0 4px 4px;margin-top:-1px">합계 (NBV): ' + nbvTotalStr + '</div>';
           }
         } catch(e) {}
       }
