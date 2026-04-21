@@ -470,6 +470,12 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
             <th style="min-width:90px">NBV</th>
           </tr></thead>
           <tbody id="dis-asset-rows"></tbody>
+          <tfoot>
+            <tr style="background:#f3f2f1;font-weight:600">
+              <td colspan="7" style="text-align:right;padding:6px 8px;font-size:12px">합계 (NBV)</td>
+              <td id="nbv-total" style="padding:6px 8px;font-size:12px;color:#0078d4">-</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
@@ -1285,6 +1291,22 @@ function onAssetAmtInput(input) {
   const depr = parseNum(tr.querySelector('[data-role="depr"]')?.value);
   const nbv  = tr.querySelector('[data-role="nbv"]');
   if (nbv) nbv.value = (acq - depr).toLocaleString();
+  // NBV 합계 재계산
+  calcNbvTotal();
+}
+function calcNbvTotal() {
+  let total = 0;
+  let hasValue = false;
+  document.querySelectorAll('#dis-asset-rows tr').forEach(tr => {
+    const nbvEl = tr.querySelector('[data-role="nbv"]');
+    if (nbvEl && nbvEl.value) {
+      const val = parseNum(nbvEl.value);
+      total += val;
+      if (val !== 0) hasValue = true;
+    }
+  });
+  const el = document.getElementById('nbv-total');
+  if (el) el.textContent = hasValue ? total.toLocaleString() + ' KRW' : '-';
 }
 function onCostAmtInput(input) {
   const raw = input.value.replace(/[^0-9.]/g, '');
@@ -1852,6 +1874,9 @@ async function showDetail(requestId) {
                   a.acqCost ? Number(String(a.acqCost).replace(/,/g,'')).toLocaleString() : '-',
                   a.accDepr ? Number(String(a.accDepr).replace(/,/g,'')).toLocaleString() : '-',
                   a.nbv ? Number(String(a.nbv).replace(/,/g,'')).toLocaleString() : '-']));
+            // NBV 합계
+            const nbvTotal = assets.reduce((sum, a) => sum + (parseFloat(String(a.nbv||'0').replace(/,/g,'')) || 0), 0);
+            html += '<div style="text-align:right;padding:4px 8px;font-size:12px;color:#0078d4;font-weight:600;background:#f3f2f1;border-radius:0 0 4px 4px;margin-top:-1px">합계 (NBV): ' + (nbvTotal ? nbvTotal.toLocaleString() + ' KRW' : '-') + '</div>';
           }
         } catch(e) {}
       }
