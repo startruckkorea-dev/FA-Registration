@@ -2452,8 +2452,8 @@ function openUniDetail(apprId) {
       '<span style="color:'+(sc[af.Status]||'#323130')+';font-weight:700;font-size:.75rem;white-space:nowrap">'+(af.Status||'')+'</span></div>'
     ).join('') + '</div>' +
     '<div style="display:flex;gap:10px;margin-bottom:10px">' +
-    '<button onclick="showConfirm('+apprId+',\'승인\','+reqId+');closeUniDetail();" class="btn-approve" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700">✅ 승인</button>' +
-    '<button onclick="showConfirm('+apprId+',\'반려\','+reqId+');closeUniDetail();" class="btn-reject" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700">❌ 반려</button>' +
+    '<button onclick="uniShowConfirm('+apprId+',\'승인\','+reqId+',\''+sys.key+'\');closeUniDetail();" class="btn-approve" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700">✅ 승인</button>' +
+    '<button onclick="uniShowConfirm('+apprId+',\'반려\','+reqId+',\''+sys.key+'\');closeUniDetail();" class="btn-reject" style="flex:1;border-radius:6px;padding:10px;font-size:.9rem;font-weight:700">❌ 반려</button>' +
     '</div>' +
     '<div style="text-align:right"><a href="'+sys.url+'" target="_blank" style="font-size:.72rem;color:#0078d4;text-decoration:none">'+sys.name+' 전체 보기 →</a></div>';
   box.style.display = 'flex';
@@ -2554,8 +2554,8 @@ async function loadUnifiedData() {
 
         html += '<tr style="cursor:pointer" onclick="openUniDetail('+item.id+')">';
         html += '<td style="color:#0078d4;font-weight:600">'+f.RequestID+'</td>'+cols;
-        html += '<td onclick="event.stopPropagation()" style="text-align:center"><button class="btn-approve" onclick="showConfirm('+item.id+',\'승인\','+f.RequestID+')">✅ 승인</button></td>';
-        html += '<td onclick="event.stopPropagation()" style="text-align:center"><button class="btn-reject" onclick="showConfirm('+item.id+',\'반려\','+f.RequestID+')">❌ 반려</button></td>';
+        html += '<td onclick="event.stopPropagation()" style="text-align:center"><button class="btn-approve" onclick="uniShowConfirm('+item.id+',\'승인\','+f.RequestID+',\''+sys.key+'\')">✅ 승인</button></td>';
+        html += '<td onclick="event.stopPropagation()" style="text-align:center"><button class="btn-reject" onclick="uniShowConfirm('+item.id+',\'반려\','+f.RequestID+',\''+sys.key+'\')">❌ 반려</button></td>';
         html += '</tr>';
       });
       html += '</tbody></table>';
