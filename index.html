@@ -635,8 +635,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block">
         <div class="appr-title">최종결재자 (자동 지정)</div>
         <div class="form-row">
-          <input type="text" id="cfg-fa-cfo-name" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" id="cfg-fa-cfo-email" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="text" id="cfg-fa-dis-cfo-name" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" id="cfg-fa-dis-cfo-email" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
         </div>
       </div>
 
@@ -897,15 +897,15 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="appr-block">
         <div class="appr-title">회계담당자 (자동 지정)</div>
         <div class="form-row">
-          <input type="text" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="text" id="cfg-fa-tfr-acc-name" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" id="cfg-fa-tfr-acc-email" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
         </div>
       </div>
       <div class="appr-block">
         <div class="appr-title">최종결재자 (자동 지정)</div>
         <div class="form-row">
-          <input type="text" id="cfg-fa-cfo-name" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
-          <input type="email" id="cfg-fa-cfo-email" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="text" id="cfg-fa-tfr-cfo-name" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
+          <input type="email" id="cfg-fa-tfr-cfo-email" readonly value="" style="border:1px solid #d2d0ce;border-radius:4px;padding:6px 10px;font-size:13px;background:#f3f2f1;color:#605e5c">
         </div>
       </div>
 
@@ -1132,13 +1132,16 @@ async function boot(account) {
   if (_cfg) {
     const _contact = cfgVal(_cfg,'FA_CONTACT',cfgVal(_cfg,'CONTACT_EMAIL',{email:''}));
     const _faCEl=document.getElementById('fa-contact-email');if(_faCEl)_faCEl.textContent='FA 관련 문의 Email: '+_contact.email;
-    const _adminList = cfgEmails(_cfg,['FA_ADMIN_1','FA_ADMIN_2','FA_ADMIN_3','ADMIN_SP']);
+    const _adminList = cfgEmails(_cfg,['FA_ADMIN_1','ADMIN_SP']);
     if(_adminList.length) ADMIN_EMAILS.splice(0,ADMIN_EMAILS.length,..._adminList);
     Object.assign(FA_ACCOUNTANT, cfgVal(_cfg,'FA_ACCOUNTANT',FA_ACCOUNTANT));
     const _faCFO = cfgVal(_cfg,'FA_CFO',{name:'',email:''});
-    [['reg-a3-name',FA_ACCOUNTANT.name],  ['reg-a3-email',FA_ACCOUNTANT.email],
-     ['cfg-fa-acc-name',FA_ACCOUNTANT.name],['cfg-fa-acc-email',FA_ACCOUNTANT.email],
-     ['cfg-fa-cfo-name',_faCFO.name],     ['cfg-fa-cfo-email',_faCFO.email],
+    [['reg-a3-name',FA_ACCOUNTANT.name],       ['reg-a3-email',FA_ACCOUNTANT.email],
+     ['cfg-fa-acc-name',FA_ACCOUNTANT.name],   ['cfg-fa-acc-email',FA_ACCOUNTANT.email],
+     ['cfg-fa-tfr-acc-name',FA_ACCOUNTANT.name],['cfg-fa-tfr-acc-email',FA_ACCOUNTANT.email],
+     ['cfg-fa-cfo-name',_faCFO.name],          ['cfg-fa-cfo-email',_faCFO.email],
+     ['cfg-fa-dis-cfo-name',_faCFO.name],      ['cfg-fa-dis-cfo-email',_faCFO.email],
+     ['cfg-fa-tfr-cfo-name',_faCFO.name],      ['cfg-fa-tfr-cfo-email',_faCFO.email],
     ].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val;});
   }
   await loadEmployees();
