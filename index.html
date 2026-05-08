@@ -1633,7 +1633,7 @@ async function submitRequest(faType) {
     let title = '', fields = {};
     if (faType === 'Registration') {
       const gl = document.getElementById('reg-gl').value;
-      title = 'FA-REG-' + new Date().toISOString().substring(0,10);
+      title = 'FA-REG-tmp';
       fields = {
         Title: title, FAType: faType,
         Description: document.getElementById('reg-description').value.trim(),
@@ -1656,7 +1656,7 @@ async function submitRequest(faType) {
         RequestDate: new Date().toISOString()
       };
     } else if (faType === 'Disposal') {
-      title = 'FA-DIS-' + new Date().toISOString().substring(0,10);
+      title = 'FA-DIS-tmp';
       // Collect asset list rows
       const assetRows = [];
       const assetTrs = document.querySelectorAll('#dis-asset-rows tr');
@@ -1733,7 +1733,7 @@ async function submitRequest(faType) {
         RequestDate: new Date().toISOString()
       };
     } else {
-      title = 'FA-TFR-' + new Date().toISOString().substring(0,10);
+      title = 'FA-TFR-tmp';
       // Collect transfer asset rows
       const tfrAssetRows = [];
       document.querySelectorAll('#tfr-asset-rows div').forEach((row, i) => {
@@ -1761,6 +1761,8 @@ async function submitRequest(faType) {
 
     const item = await api('/sites/' + siteId + '/lists/FA_Requests/items', 'POST', { fields });
     const reqId = item.id;
+    const _faPrefix = title.split('-tmp')[0];
+    await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Title: _faPrefix + '-' + new Date().toISOString().slice(0,10) + '-' + reqId } });
 
     // Upload files
     const fileLinks = [];
