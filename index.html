@@ -1762,7 +1762,7 @@ async function submitRequest(faType) {
     const item = await api('/sites/' + siteId + '/lists/FA_Requests/items', 'POST', { fields });
     const reqId = item.id;
     const _faPrefix = title.split('-tmp')[0];
-    await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Title: _faPrefix + '-' + new Date().toISOString().slice(0,10) + '-' + reqId } });
+    await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Title: _faPrefix + '-' + new Date().toISOString().slice(0,10) + '_ID-' + reqId } });
 
     // Upload files
     const fileLinks = [];
