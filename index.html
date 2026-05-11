@@ -1969,8 +1969,8 @@ async function processApproval(apprId, action, reqId, role, comment='') {
       if (faCode) patchFields.FACode = faCode;
       await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: patchFields });
     } else if (action === '승인') {
-      const all = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500&$filter=fields/RequestID eq ' + reqId);
-      const next = all.value.filter(i => i.fields.Status === '대기(잠김)').sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
+      let _ap=[],_nu='/sites/'+siteId+'/lists/FA_Approvals/items?$expand=fields&$top=500';while(_nu){const _p=await api(_nu);_ap=_ap.concat(_p.value);_nu=_p['@odata.nextLink']?_p['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0',''):null;}
+      const next = _ap.filter(i=>Number(i.fields.RequestID)===Number(reqId)&&i.fields.Status==='대기(잠김)').sort((a,b)=>a.fields.ApprovalOrder-b.fields.ApprovalOrder);
       if (next.length) await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
     }
     alert(action + ' 처리되었습니다.');
