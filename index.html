@@ -1074,7 +1074,7 @@ async function token() {
   }
 }
 
-// ── 페이지네이션 전체 조회 헬퍼 ──
+// ── 페이지네이션 전체 조회 헬퍼 (기존 .value 접근 호환) ──
 async function apiAll(path) {
   let items = [], url = path;
   while(url) {
@@ -1083,12 +1083,6 @@ async function apiAll(path) {
     url = d['@odata.nextLink'] ? d['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0','') : null;
   }
   return {value: items};
-}
-// ApproverEmail 인덱싱 → 서버사이드 필터로 빠르게 조회
-async function apiMyApprovals(listPath, myEmail) {
-  const encoded = encodeURIComponent(myEmail);
-  const url = listPath + "/items?$expand=fields&$filter=ApproverEmail eq '" + myEmail + "'&$top=999";
-  return apiAll(url);
 }
 async function api(path, method='GET', body=null) {
   const t = await token();
@@ -1922,7 +1916,7 @@ async function loadApprovalQueue() {
   try {
     // FA_Approvals + FA_Requests 동시 로드 (Promise.all로 병렬 1회)
     const [apprData, reqData] = await Promise.all([
-      apiMyApprovals('/sites/' + siteId + '/lists/FA_Approvals', user.email||user.username||''),
+      apiAll('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields'),
       api('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500')
     ]);
     const reqMap = {};
@@ -2670,4 +2664,3 @@ async function loadUnifiedData() {
 <datalist id="cctr-datalist"><option value="(47900704) RD Office"><option value="(47900705) CEO Office"><option value="(47900715) HR"><option value="(47900708) Compliance"><option value="(47926134) PMM Head Office"><option value="(47926145) Homologation"><option value="(47925185) Delivery Center"><option value="(47926135) Product Management"><option value="(47920205) Sales Training"><option value="(47925155) Marketing& Communication"><option value="(47926114) Sales Head Office"><option value="(47926115) Sales Planning & Operation"><option value="(47927165) Bodybuilder/Fleet Sales"><option value="(47927115) Unimog Sales"><option value="(47941115) STK Field Seoul"><option value="(47928115) STK Field Busan"><option value="(47920115) STK Field Gwangju"><option value="(47910115) STK Field Jecheon"><option value="(47953305) CSP Head Office"><option value="(47955405) Technical Operation"><option value="(47954405) Unimog CSP"><option value="(47950466) Technical Training"><option value="(47954325) Parts OP & Logistics"><option value="(47954345) Parts Performance"><option value="(47954415) CRM & Call Center"><option value="(47920765) Service & Network"><option value="(47954455) District Management"><option value="(47954435) Warranty"><option value="(47900706) CFO Office"><option value="(47900825) Procurement"><option value="(47900776) Accounting"><option value="(47900775) Controlling"><option value="(47900745) IT Application"><option value="(47900755) IT Infrastructure"></datalist>
 </body>
 </html>
-<!-- cache-bust 1778507257 -->
