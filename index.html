@@ -1969,8 +1969,8 @@ async function processApproval(apprId, action, reqId, role, comment='') {
       if (faCode) patchFields.FACode = faCode;
       await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: patchFields });
     } else if (action === '승인') {
-      const all = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500');
-      const next = all.value.filter(i => i.fields.RequestID == reqId && i.fields.Status === '대기(잠김)').sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
+      const all = await api('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields&$top=500&$filter=fields/RequestID eq ' + reqId);
+      const next = all.value.filter(i => i.fields.Status === '대기(잠김)').sort((a,b) => a.fields.ApprovalOrder - b.fields.ApprovalOrder);
       if (next.length) await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
     }
     alert(action + ' 처리되었습니다.');
