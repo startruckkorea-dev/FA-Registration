@@ -105,6 +105,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .modal-value { flex: 1; color: #323130; word-break: break-all; }
 
 #loading { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); align-items: center; justify-content: center; z-index: 999; }
+/* ── Toast ── */
+#fa-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e293b;color:#fff;border-radius:10px;padding:14px 22px;font-size:.85rem;line-height:1.6;box-shadow:0 6px 24px rgba(0,0,0,.22);z-index:2000;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:pre-line;text-align:center;min-width:240px}
+#fa-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #loading.show { display: flex; }
 .loading-box { background: #fff; border-radius: 6px; padding: 28px 40px; font-size: 15px; color: #323130; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .spinner { width: 32px; height: 32px; border: 3px solid #edebe9; border-top: 3px solid #0078d4; border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -1005,7 +1008,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 </div>
 
 <!-- 결재 확인 팝업 -->
-<div id="confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;align-items:center;justify-content:center">
+<div id="fa-toast"></div>
+
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1100;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:10px;padding:28px 28px 20px;max-width:420px;width:92%;box-shadow:0 4px 24px rgba(0,0,0,.2)">
     <div id="confirm-title" style="font-size:1rem;font-weight:700;color:#323130;margin-bottom:6px"></div>
     <div id="confirm-sub" style="font-size:.78rem;color:#605e5c;margin-bottom:14px"></div>
@@ -1846,7 +1851,8 @@ async function submitRequest(faType) {
         Status: a.order === 1 ? '대기' : '대기(잠김)'
       }});
     }
-    alert('상신이 완료되었습니다.');
+    const _finalTitle = _faPrefix + '-' + new Date().toISOString().slice(0,10) + '_ID-' + reqId;
+    showToast('상신이 완료되었습니다.\n신청번호: ' + _finalTitle);
     if (faType === 'Registration') resetRegForm();
     else if (faType === 'Disposal') resetDisposalForm();
     else resetTransferForm();
@@ -1958,6 +1964,12 @@ function showConfirm(apprId, action, reqId, role) {
 function closeConfirm() {
   document.getElementById('confirm-modal').style.display = 'none';
   _pendingApproval = null;
+}
+function showToast(msg, duration=4000) {
+  const t = document.getElementById('fa-toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
 }
 async function confirmApproval() {
   if (!_pendingApproval) return;
