@@ -1062,6 +1062,7 @@ const ADMIN_EMAILS = [
   ''
 ];
 const FA_ACCOUNTANT = { name: 'Sora Kim', email: '' };
+const FA_CFO = { name: 'Martin Schindele', email: '' };
 
 let msalApp = null, user = null, siteId = null;
 let regFiles = [], disFiles = [], tfrFiles = [];
@@ -1178,7 +1179,8 @@ async function boot(account) {
     const _adminList = cfgEmails(_cfg,['FA_ADMIN_1','ADMIN_SP']);
     if(_adminList.length) ADMIN_EMAILS.splice(0,ADMIN_EMAILS.length,..._adminList);
     Object.assign(FA_ACCOUNTANT, cfgVal(_cfg,'FA_ACCOUNTANT',FA_ACCOUNTANT));
-    const _faCFO = cfgVal(_cfg,'FA_CFO',{name:'',email:''});
+    const _faCFO = cfgVal(_cfg,'FA_CFO',{name:'Martin Schindele',email:''});
+    Object.assign(FA_CFO, _faCFO);
     [['reg-a3-name',FA_ACCOUNTANT.name],       ['reg-a3-email',FA_ACCOUNTANT.email],
      ['cfg-fa-acc-name',FA_ACCOUNTANT.name],   ['cfg-fa-acc-email',FA_ACCOUNTANT.email],
      ['cfg-fa-tfr-acc-name',FA_ACCOUNTANT.name],['cfg-fa-tfr-acc-email',FA_ACCOUNTANT.email],
@@ -1838,7 +1840,7 @@ async function submitRequest(faType) {
       { name: document.getElementById(prefix + '-a1-name').value, email: document.getElementById(prefix + '-a1-email').value, role: '1차결재자', order: 1 },
       { name: document.getElementById(prefix + '-a2-name').value, email: document.getElementById(prefix + '-a2-email').value, role: '2차결재자', order: 2 },
       { name: FA_ACCOUNTANT.name, email: FA_ACCOUNTANT.email, role: '회계담당자', order: 3 },
-      { name: 'Martin Schindele', email: '', role: '최종결재자', order: 4 },
+      { name: FA_CFO.name, email: FA_CFO.email, role: '최종결재자', order: 4 },
     ];
     // Transfer: 이동 후 부서 결재자(3차,4차) 추가 후 회계/마틴 순서 재조정
     if (faType === 'Transfer') {
@@ -1854,7 +1856,7 @@ async function submitRequest(faType) {
       if (a4email) approvers.push({ name: a4name, email: a4email, role: '4차결재자(이동후 부서장)', order: 4 });
       const nextOrder = approvers.length + 1;
       approvers.push({ name: FA_ACCOUNTANT.name, email: FA_ACCOUNTANT.email, role: '회계담당자', order: nextOrder });
-      approvers.push({ name: 'Martin Schindele', email: '', role: '최종결재자', order: nextOrder + 1 });
+      approvers.push({ name: FA_CFO.name, email: FA_CFO.email, role: '최종결재자', order: nextOrder + 1 });
     }
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/FA_Approvals/items', 'POST', { fields: {
