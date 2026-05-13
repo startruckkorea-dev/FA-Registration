@@ -1998,7 +1998,8 @@ async function processApproval(apprId, action, reqId, role, comment='') {
       const next = _ap.filter(i=>Number(i.fields.RequestID)===Number(reqId)&&i.fields.Status==='대기(잠김)').sort((a,b)=>a.fields.ApprovalOrder-b.fields.ApprovalOrder);
       if (next.length) await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
     }
-    alert(action + ' 처리되었습니다.');
+    showToast(action + ' 처리되었습니다.');
+    closeModal();
     await loadApprovalQueue();
     await checkApprover();
     loadUnifiedBadge().catch(()=>{});
