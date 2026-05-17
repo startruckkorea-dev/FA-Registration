@@ -2496,7 +2496,7 @@ document.addEventListener('click', async function(e) {
 });
 
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
-function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
+function showError(msg) { const el = document.getElementById('login-err'); if(el){ el.style.display = 'block'; el.textContent = '오류: ' + msg; } }
 function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
 
 // ── INIT MSAL ──
