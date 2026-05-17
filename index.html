@@ -222,7 +222,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
   <div class="login-card">
     <div class="login-logo">🏷️</div>
     <div class="login-title">FA Registration</div>
-    <div class="login-co">STK FA 마스터 데이터 등록</div>
+    <div class="login-co">STK Korea FA 마스터 데이터 등록</div>
     <button class="btn-login" id="btn-login" onclick="signIn()" disabled>로딩 중...</button>
     <div id="login-err"></div>
   </div>
@@ -237,44 +237,6 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
     <div class="user-info" style="flex-direction:column;align-items:flex-end;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
         <span id="user-name"></span>
-
-// ── 비활동 자동 로그아웃 (12시간) ──────────────────
-const IDLE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12시간
-const IDLE_KEY = 'stk_last_active';
-let _idleTimer = null;
-
-function resetIdleTimer() {
-  sessionStorage.setItem(IDLE_KEY, Date.now().toString());
-  if (_idleTimer) clearTimeout(_idleTimer);
-  _idleTimer = setTimeout(() => {
-    alert('장시간 미사용으로 자동 로그아웃됩니다.');
-    if (typeof msalApp !== 'undefined' && msalApp) {
-      sessionStorage.removeItem(IDLE_KEY);
-      msalApp.logoutRedirect();
-    }
-  }, IDLE_TIMEOUT_MS);
-}
-
-function checkIdleOnLoad() {
-  const last = parseInt(sessionStorage.getItem(IDLE_KEY) || '0');
-  if (last && Date.now() - last > IDLE_TIMEOUT_MS) {
-    sessionStorage.removeItem(IDLE_KEY);
-    if (typeof msalApp !== 'undefined' && msalApp) {
-      msalApp.logoutRedirect();
-    }
-    return false;
-  }
-  return true;
-}
-
-function startIdleWatcher() {
-  resetIdleTimer();
-  ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(evt =>
-    document.addEventListener(evt, resetIdleTimer, { passive: true })
-  );
-}
-// ────────────────────────────────────────────────────
-
         <button id="btn-logout" onclick="signOut()">로그아웃</button>
       </div>
       <a href="https://aps.startruckkorea.com/" target="_blank" title="STK 통합 결재함" style="text-decoration:none;display:inline-flex;align-items:center;gap:7px;background:#0078d4;color:#fff;border-radius:6px;padding:7px 14px;font-size:.8rem;font-weight:600;font-family:'Segoe UI',sans-serif;letter-spacing:-.2px;box-shadow:0 1px 4px rgba(0,120,212,.25);transition:background .15s" onmouseover="this.style.background='#106ebe'" onmouseout="this.style.background='#0078d4'"><span style="font-size:1rem;line-height:1">📬</span><span>통합 결재함</span></a>
@@ -513,8 +475,8 @@ function startIdleWatcher() {
       </div>
 
       <div class="btn-row">
-        <button class="btn-secondary" onclick="resetRegForm()">Reset</button>
-        <button class="btn-primary" onclick="submitRequest('Registration')">Submit</button>
+        <button class="btn-secondary" onclick="resetRegForm()">초기화</button>
+        <button class="btn-primary" onclick="submitRequest('Registration')">상신</button>
       </div>
     </div>
   </div>
@@ -702,8 +664,8 @@ function startIdleWatcher() {
       <div id="dis-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
 
       <div class="btn-row">
-        <button class="btn-secondary" onclick="resetDisposalForm()">Reset</button>
-        <button class="btn-primary" onclick="submitRequest('Disposal')">Submit</button>
+        <button class="btn-secondary" onclick="resetDisposalForm()">초기화</button>
+        <button class="btn-primary" onclick="submitRequest('Disposal')">상신</button>
       </div>
     </div>
   </div>
@@ -971,8 +933,8 @@ function startIdleWatcher() {
       <div id="tfr-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
 
       <div class="btn-row">
-        <button class="btn-secondary" onclick="resetTransferForm()">Reset</button>
-        <button class="btn-primary" onclick="submitRequest('Transfer')">Submit</button>
+        <button class="btn-secondary" onclick="resetTransferForm()">초기화</button>
+        <button class="btn-primary" onclick="submitRequest('Transfer')">상신</button>
       </div>
     </div>
   </div>
@@ -1204,8 +1166,6 @@ function cfgEmails(cfg, keys) {
 }
 
 async function boot(account) {
-  if (!checkIdleOnLoad()) return;
-  startIdleWatcher();
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   user = account;
@@ -2496,14 +2456,14 @@ document.addEventListener('click', async function(e) {
 });
 
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
-function showError(msg) { const el = document.getElementById('login-err'); if(el){ el.style.display = 'block'; el.textContent = '오류: ' + msg; } }
+function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
 function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
 
 // ── INIT MSAL ──
 (async () => {
   const msalInstance = await msal.PublicClientApplication.createPublicClientApplication({
     auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/' + TENANT_ID, redirectUri: window.location.origin + window.location.pathname },
-    cache: { cacheLocation: 'sessionStorage' }
+    cache: { cacheLocation: 'localStorage' }
   });
   msalApp = msalInstance; msal = msalApp;
   const btn = document.getElementById('btn-login');
