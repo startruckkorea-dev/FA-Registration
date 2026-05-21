@@ -74,6 +74,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 .list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .list-table th { background: #f3f2f1; padding: 9px 10px; text-align: left; font-weight: 600; color: #323130; border-bottom: 1px solid #edebe9; font-size: 12px; }
 .list-table td { padding: 9px 10px; border-bottom: 1px solid #edebe9; color: #323130; font-size: 12px; }
+.list-table tbody tr[onclick]:hover td { background: #f0f6ff; cursor: pointer; }
 .list-table tr:hover td { background: #f3f2f1; cursor: pointer; }
 
 .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
@@ -1917,7 +1918,7 @@ async function loadMyList() {
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '신청 내역이 없습니다.', 5); return; }
-    dynLoadEnd(); pgSet('list', mine, item => { const f = item.fields; return '<tr onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td><span class="badge badge-type">' + (f.FAType||'') + '</span></td><td>' + (f.Title||'') + '</td><td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '신청 내역이 없습니다.', 5);
+    dynLoadEnd(); pgSet('list', mine, item => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + item.id + '</td><td><span class="badge badge-type">' + (f.FAType||'') + '</span></td><td>' + (f.Title||'') + '</td><td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '신청 내역이 없습니다.', 5);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
