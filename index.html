@@ -1064,6 +1064,7 @@ const ADMIN_EMAILS = [
   '',
   ''
 ];
+let _configLoaded = false;
 const FA_ACCOUNTANT = { name: 'Sora Kim', email: '' };
 const FA_CFO = { name: 'Martin Schindele', email: '' };
 
@@ -1180,6 +1181,7 @@ async function boot(account) {
     const _faCEl=document.getElementById('fa-contact-email');if(_faCEl)_faCEl.textContent='FA 관련 문의 Email: '+_contact.email;
     const _adminList = cfgEmails(_cfg,['FA_ADMIN_1','ADMIN_SP']);
     if(_adminList.length) ADMIN_EMAILS.splice(0,ADMIN_EMAILS.length,..._adminList);
+      _configLoaded = true;
     Object.assign(FA_ACCOUNTANT, cfgVal(_cfg,'FA_ACCOUNTANT',FA_ACCOUNTANT));
     const _faCFO = cfgVal(_cfg,'FA_CFO',{name:'Martin Schindele',email:''});
     Object.assign(FA_CFO, _faCFO);
@@ -1630,6 +1632,15 @@ function renderFiles(prefix) {
 // ── TABS ──
 function switchTab(name) {
   if (name === 'admin') {
+    if (!_configLoaded) {
+      const _btn = document.getElementById('tab-admin-btn');
+      if (_btn) { _btn.style.opacity='0.6'; _btn.style.pointerEvents='none'; _btn.title='권한 확인 중...'; }
+      setTimeout(() => {
+        if (_btn) { _btn.style.opacity=''; _btn.style.pointerEvents=''; _btn.title=''; }
+        switchTab('admin');
+      }, 1500);
+      return;
+    }
     const _emails = typeof ADMIN_EMAILS !== 'undefined' ? ADMIN_EMAILS : [];
     const _user = typeof user !== 'undefined' ? user : null;
     const _isAdmin = _user && _emails.map(e=>e.toLowerCase()).some(e =>
