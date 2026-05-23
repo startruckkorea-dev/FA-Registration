@@ -1171,7 +1171,7 @@ async function boot(account) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   user = account;
-  document.getElementById('user-name').textContent = account.name || account.username;
+  document.getElementById('user-name').textContent = (account.name || account.username) + ' (' + account.username + ')';
   const site = await api('/sites/' + SITE_PATH);
   siteId = site.id;
   const _cfg = await loadSystemConfig();
