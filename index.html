@@ -1886,7 +1886,7 @@ async function submitRequest(faType) {
     }
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/FA_Approvals/items', 'POST', { fields: {
-        Title: reqId + '-' + a.order, RequestID: parseInt(reqId),
+        Title: _faPrefix + '-' + new Date().toISOString().slice(0,10) + '_ID-' + reqId + '-' + a.order, RequestID: parseInt(reqId),
         ApproverEmail: a.email, ApproverName: a.name,
         ApproverRole: a.role, ApprovalOrder: a.order,
         Status: a.order === 1 ? '대기' : '대기(잠김)'
