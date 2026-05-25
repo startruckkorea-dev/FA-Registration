@@ -2028,7 +2028,8 @@ async function processApproval(apprId, action, reqId, role, comment='') {
   loading(true);
   try {
         const _cur = await api('/sites/'+siteId+'/lists/FA_Approvals/items/'+apprId+'?$expand=fields');
-    if(_cur.fields.Status !== '대기'){showAlert('이미 처리된 결재 항목입니다.','다른 창에서 처리되었거나 이미 완료된 항목입니다.','⚠️');await loadApprovalQueue();return;}
+    const _curStatus = (_cur.fields.Status?.Value || _cur.fields.Status || '').trim();
+    if(_curStatus !== '대기'){showAlert('이미 처리된 결재 항목입니다.','다른 창에서 처리되었거나 이미 완료된 항목입니다.','⚠️');await loadApprovalQueue();return;}
 await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
       fields: { Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }
     });
@@ -2818,8 +2819,25 @@ async function loadUnifiedData() {
 
 
 
-
-
+// ── FA Code 모달 ──
+let _faCodeResolve = null;
+function _showFaCodeModal() {
+  return new Promise((resolve) => {
+    _faCodeResolve = resolve;
+    document.getElementById('fa-code-input').value = '';
+    document.getElementById('fa-code-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('fa-code-input').focus(), 100);
+  });
+}
+function _confirmFaCode() {
+  const code = document.getElementById('fa-code-input').value.trim();
+  document.getElementById('fa-code-modal').style.display = 'none';
+  if (_faCodeResolve) { _faCodeResolve({ confirmed: true, code }); _faCodeResolve = null; }
+}
+function _cancelFaCode() {
+  document.getElementById('fa-code-modal').style.display = 'none';
+  if (_faCodeResolve) { _faCodeResolve({ confirmed: false, code: '' }); _faCodeResolve = null; }
+}
 </script>
 <datalist id="cctr-datalist"><option value="(47900704) RD Office"><option value="(47900705) CEO Office"><option value="(47900715) HR"><option value="(47900708) Compliance"><option value="(47926134) PMM Head Office"><option value="(47926145) Homologation"><option value="(47925185) Delivery Center"><option value="(47926135) Product Management"><option value="(47920205) Sales Training"><option value="(47925155) Marketing& Communication"><option value="(47926114) Sales Head Office"><option value="(47926115) Sales Planning & Operation"><option value="(47927165) Bodybuilder/Fleet Sales"><option value="(47927115) Unimog Sales"><option value="(47941115) STK Field Seoul"><option value="(47928115) STK Field Busan"><option value="(47920115) STK Field Gwangju"><option value="(47910115) STK Field Jecheon"><option value="(47953305) CSP Head Office"><option value="(47955405) Technical Operation"><option value="(47954405) Unimog CSP"><option value="(47950466) Technical Training"><option value="(47954325) Parts OP & Logistics"><option value="(47954345) Parts Performance"><option value="(47954415) CRM & Call Center"><option value="(47920765) Service & Network"><option value="(47954455) District Management"><option value="(47954435) Warranty"><option value="(47900706) CFO Office"><option value="(47900825) Procurement"><option value="(47900776) Accounting"><option value="(47900775) Controlling"><option value="(47900745) IT Application"><option value="(47900755) IT Infrastructure"></datalist>
 <!-- FOOTER -->
