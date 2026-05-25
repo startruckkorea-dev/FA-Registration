@@ -2035,17 +2035,34 @@ await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
     if (action === '반려') {
       await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
     } else if (action === '승인') {
+      // 회계담당자 승인 시 FA Code 입력 (취소 시 결재 중단)
+      if (role === '회계담당자') {
+        loading(false);
+        const result = await _showFaCodeModal();
+        if (!result.confirmed) {
+          // 취소 → 승인 PATCH 롤백 (대기 상태로 되돌리기)
+          await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
+            fields: { Status: '대기', ApprovalDate: null, Comment: '' }
+          });
+          showAlert('승인이 취소되었습니다.', 'FA Code 미입력로 승인이 취소되었습니다.', '⚠️');
+          await loadApprovalQueue(); await checkApprover();
+          return;
+        }
+        loading(true);
+        // FA Code 저장
+        await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', {
+          fields: { FACode: result.code || '' }
+        });
+      }
       // 다음 대기(잠김) 결재자 확인
       let _ap=[],_nu='/sites/'+siteId+'/lists/FA_Approvals/items?$expand=fields&$top=500';
       while(_nu){const _p=await api(_nu);_ap=_ap.concat(_p.value);_nu=_p['@odata.nextLink']?_p['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0',''):null;}
       const next = _ap.filter(i=>Number(i.fields.RequestID)===Number(reqId)&&i.fields.Status==='대기(잠김)').sort((a,b)=>a.fields.ApprovalOrder-b.fields.ApprovalOrder);
       if (next.length) {
-        // 다음 결재자 활성화
         await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
       } else {
-        // 모든 결재자 승인 완료 → 최종 승인완료 처리
-        const faCode = prompt('최종 승인되었습니다. FA Code를 입력해주세요 (없으면 빈칸으로 확인):') || '';
-        await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '승인완료', FACode: faCode } });
+        // 모든 결재자 완료 → 승인완료
+        await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
       }
     }
     showAlert(action + ' 처리되었습니다.', '', action === '반려' ? '❌' : '✅');
@@ -2840,5 +2857,26 @@ async function loadUnifiedData() {
 @keyframes noAuthIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 #no-auth-modal.show{display:flex!important}
 </style>
+
+<!-- FA Code 입력 모달 -->
+<div id="fa-code-modal" onclick="if(event.target===this)_cancelFaCode()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1200;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:32px 28px 24px;max-width:400px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="font-size:1.4rem;">📋</span>
+      <div style="font-size:1rem;font-weight:700;color:#323130;">FA Code 입력</div>
+    </div>
+    <div style="font-size:.82rem;color:#605e5c;margin-bottom:18px;line-height:1.6;">
+      회계담당자 승인 처리를 위해 FA Code를 입력해주세요.<br>
+      <span style="color:#a4262c;font-weight:600;">취소 시 승인이 처리되지 않습니다.</span>
+    </div>
+    <input id="fa-code-input" type="text" placeholder="FA Code 입력 (예: FA-2026-001)"
+      style="width:100%;border:1.5px solid #d2d0ce;border-radius:6px;padding:10px 12px;font-size:.9rem;font-family:inherit;margin-bottom:20px;box-sizing:border-box;outline:none;"
+      onkeydown="if(event.key==='Enter')_confirmFaCode();if(event.key==='Escape')_cancelFaCode();" />
+    <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <button onclick="_cancelFaCode()" style="background:#fff;border:1px solid #d2d0ce;border-radius:6px;padding:8px 22px;font-size:.85rem;cursor:pointer;font-family:inherit;color:#323130;">취소</button>
+      <button onclick="_confirmFaCode()" style="background:#0078d4;color:#fff;border:none;border-radius:6px;padding:8px 22px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;">승인 처리</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
