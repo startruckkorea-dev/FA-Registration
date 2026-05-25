@@ -1200,6 +1200,9 @@ async function boot(account) {
   const isAdmin = ADMIN_EMAILS.map(e=>e.toLowerCase()).includes(user.username.toLowerCase());
   document.getElementById('tab-admin-btn').style.display = 'block';
   switchTab('reg');
+
+  // 배지 자동 갱신 (60초마다)
+  setInterval(function(){ try{checkApprover();}catch(e){} }, 60000);
 }
 
 // ── EMPLOYEES ──
