@@ -2034,15 +2034,19 @@ await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
     });
     if (action === '반려') {
       await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
-    } else if (action === '승인' && role === '회계담당자') {
-      const faCode = prompt('최종 승인되었습니다. FA Code를 입력해주세요 (없으면 취소):');
-      const patchFields = { Status: '승인완료' };
-      if (faCode) patchFields.FACode = faCode;
-      await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: patchFields });
     } else if (action === '승인') {
-      let _ap=[],_nu='/sites/'+siteId+'/lists/FA_Approvals/items?$expand=fields&$top=500';while(_nu){const _p=await api(_nu);_ap=_ap.concat(_p.value);_nu=_p['@odata.nextLink']?_p['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0',''):null;}
+      // 다음 대기(잠김) 결재자 확인
+      let _ap=[],_nu='/sites/'+siteId+'/lists/FA_Approvals/items?$expand=fields&$top=500';
+      while(_nu){const _p=await api(_nu);_ap=_ap.concat(_p.value);_nu=_p['@odata.nextLink']?_p['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0',''):null;}
       const next = _ap.filter(i=>Number(i.fields.RequestID)===Number(reqId)&&i.fields.Status==='대기(잠김)').sort((a,b)=>a.fields.ApprovalOrder-b.fields.ApprovalOrder);
-      if (next.length) await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
+      if (next.length) {
+        // 다음 결재자 활성화
+        await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
+      } else {
+        // 모든 결재자 승인 완료 → 최종 승인완료 처리
+        const faCode = prompt('최종 승인되었습니다. FA Code를 입력해주세요 (없으면 빈칸으로 확인):') || '';
+        await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '승인완료', FACode: faCode } });
+      }
     }
     showAlert(action + ' 처리되었습니다.', '', action === '반려' ? '❌' : '✅');
     closeModal();
