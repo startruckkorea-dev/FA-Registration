@@ -1209,13 +1209,13 @@ async function boot(account) {
      ['cfg-fa-tfr-cfo-name',_faCFO.name],      ['cfg-fa-tfr-cfo-email',_faCFO.email],
     ].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val;});
   }
+  const isAdmin = ADMIN_EMAILS.map(e=>e.toLowerCase()).includes(user.username.toLowerCase());
+  document.getElementById('tab-admin-btn').style.display = 'block';
+  switchTab('reg'); // 느린 백그라운드 작업(loadEmployees/checkApprover)보다 먼저 초기 탭을 확정 — 이후엔 탭을 강제로 되돌리지 않음
   await loadEmployees();
   initAllForms();
   initAssetRows();
   await checkApprover();
-  const isAdmin = ADMIN_EMAILS.map(e=>e.toLowerCase()).includes(user.username.toLowerCase());
-  document.getElementById('tab-admin-btn').style.display = 'block';
-  switchTab('reg');
 
   // 배지 자동 갱신 (60초마다)
   setInterval(function(){ try{checkApprover();}catch(e){} }, 60000);
