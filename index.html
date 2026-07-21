@@ -299,8 +299,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
       <div class="form-row">
         <div class="form-group">
           <label>원가부서 (CCTR) <span class="req">*</span></label>
-          <select id="reg-cctr">
-            <option value="">-- 선택 --</option>
+          <select id="reg-cctr" disabled>
+            <option value="">⏳ CCTR 목록 로딩중...</option>
           </select>
           <div style="font-size:11px;color:#605e5c;margin-top:4px">CCTR이 목록에 없는 경우 비고란에 직접 입력 부탁드립니다.</div>
         </div>
@@ -677,8 +677,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
         <div class="form-group">
           <label>Previous CCTR <span class="req">*</span></label>
-          <select id="tfr-prev-cctr">
-            <option value="">-- 선택 --</option>
+          <select id="tfr-prev-cctr" disabled>
+            <option value="">⏳ CCTR 목록 로딩중...</option>
           </select>
         </div>
       </div>
@@ -720,8 +720,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         </div>
         <div class="form-group">
           <label>New CCTR <span class="req">*</span></label>
-          <select id="tfr-new-cctr">
-            <option value="">-- 선택 --</option>
+          <select id="tfr-new-cctr" disabled>
+            <option value="">⏳ CCTR 목록 로딩중...</option>
           </select>
         </div>
       </div>
@@ -1163,7 +1163,7 @@ function renderCCTROptions() {
         '<option value="(' + c.code + ') ' + c.name + '">(' + c.code + ') ' + c.name + '</option>').join('');
   ['reg-cctr', 'tfr-prev-cctr', 'tfr-new-cctr'].forEach(id => {
     const sel = document.getElementById(id);
-    if (sel) { const cur = sel.value; sel.innerHTML = optsHtml; sel.value = cur; }
+    if (sel) { const cur = sel.value; sel.innerHTML = optsHtml; sel.value = cur; sel.disabled = false; }
   });
   const dl = document.getElementById('cctr-datalist');
   if (dl) dl.innerHTML = COST_CENTERS.map(c => '<option value="(' + c.code + ') ' + c.name + '">').join('');
