@@ -1014,6 +1014,8 @@ async function token() {
 
 // ── 페이지네이션 전체 조회 헬퍼 (기존 .value 접근 호환) ──
 async function apiAll(path) {
+  // SharePoint 기본 페이지 크기(200건)보다 크게 요청해서 왕복 횟수를 줄임 (데이터 누락 없이 전량은 그대로 다 읽음)
+  if (!/[?&]\$top=/.test(path)) path += (path.includes('?') ? '&' : '?') + '$top=999';
   let items = [], url = path;
   while(url) {
     const d = await api(url);
@@ -1903,7 +1905,7 @@ async function loadMyList() {
   const tbody = document.getElementById('list-body');
   dynLoadStart('FA 데이터 불러오는 중');
   try {
-    const data = await api('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500');
+    const data = await apiAll('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500');
     const mine = data.value
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
@@ -1931,7 +1933,7 @@ async function loadApprovalQueue() {
     // FA_Approvals + FA_Requests 동시 로드 (Promise.all로 병렬 1회)
     const [apprData, reqData] = await Promise.all([
       apiAll('/sites/' + siteId + '/lists/FA_Approvals/items?$expand=fields'),
-      api('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500')
+      apiAll('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500')
     ]);
     const reqMap = {};
     reqData.value.forEach(function(r){ reqMap[r.id] = r.fields; });
@@ -2681,7 +2683,7 @@ async function loadUnifiedBadge() {
   let total = 0;
   await Promise.all(_UNIFIED_SYSTEMS.map(async sys => {
     try {
-      const data = await api('/sites/'+siteId+'/lists/'+sys.list+'/items?$expand=fields&$top=500');
+      const data = await apiAll('/sites/'+siteId+'/lists/'+sys.list+'/items?$expand=fields&$top=500');
       total += data.value.filter(i => (i.fields.ApproverEmail||'').toLowerCase() === (user.email||user.username||'').toLowerCase() && (i.fields.Status||'').trim() === '대기').length;
     } catch(e) {}
   }));
@@ -2709,8 +2711,8 @@ async function loadUnifiedData() {
   const results = await Promise.all(_UNIFIED_SYSTEMS.map(async sys => {
     try {
       const [apprData, reqData] = await Promise.all([
-        api('/sites/'+siteId+'/lists/'+sys.list+'/items?$expand=fields&$top=500'),
-        api('/sites/'+siteId+'/lists/'+sys.reqList+'/items?$expand=fields&$top=500'),
+        apiAll('/sites/'+siteId+'/lists/'+sys.list+'/items?$expand=fields&$top=500'),
+        apiAll('/sites/'+siteId+'/lists/'+sys.reqList+'/items?$expand=fields&$top=500'),
       ]);
       const reqMap = {};
       reqData.value.forEach(r => { reqMap[r.id] = r.fields; });
