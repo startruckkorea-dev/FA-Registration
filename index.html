@@ -2625,14 +2625,37 @@ async function exportFaDetailPdf() {
     }
 
     // ── 첨부파일 처리 (이미지는 직접 삽입, Office/PDF는 Graph API로 PDF 변환 후 병합) ──
-    const fileLinks = contentEl.querySelectorAll('.file-dl-link');
+    // 신형(.file-dl-link: driveId+itemId 직접 저장)과 구형(.file-legacy-link: webUrl/경로만 저장) 두 포맷 모두 지원
     const _t = await token();
+    const newLinks = Array.from(contentEl.querySelectorAll('.file-dl-link')).map(link => ({
+      name: decodeURIComponent(link.dataset.name || ''),
+      driveId: decodeURIComponent(link.dataset.drive || ''),
+      itemId: decodeURIComponent(link.dataset.id || ''),
+    }));
+    let legacyDrive = null;
+    const legacyLinksRaw = Array.from(contentEl.querySelectorAll('.file-legacy-link'));
+    const legacyLinks = [];
+    for (const link of legacyLinksRaw) {
+      const name = decodeURIComponent(link.dataset.name || '');
+      const relPath = decodeURIComponent(link.getAttribute('data-path') || '');
+      if (!name || !relPath) continue;
+      try {
+        if (!legacyDrive) {
+          const drivesData = await api('/sites/' + siteId + '/drives');
+          legacyDrive = drivesData.value.find(d => d.name === 'AttachedFiles') || drivesData.value[0];
+        }
+        const drivePath = relPath.replace(/^AttachedFiles\//, '');
+        const meta = await api('/drives/' + legacyDrive.id + '/root:/' + encodeURIComponent(drivePath).replace(/%2F/g, '/'));
+        legacyLinks.push({ name, driveId: legacyDrive.id, itemId: meta.id });
+      } catch(e) { console.warn('구형 첨부파일 조회 실패:', name, e.message); }
+    }
+    const fileLinks = [...newLinks, ...legacyLinks];
 
     for(const link of fileLinks) {
-      const name = decodeURIComponent(link.dataset.name || '');
+      const name = link.name;
       if(!name) continue;
-      const dId = decodeURIComponent(link.dataset.drive || '');
-      const iId = decodeURIComponent(link.dataset.id || '');
+      const dId = link.driveId;
+      const iId = link.itemId;
       if(!dId || !iId) continue;
       const ext = name.split('.').pop().toLowerCase();
       const imgExts = ['jpg','jpeg','png','gif','webp'];
