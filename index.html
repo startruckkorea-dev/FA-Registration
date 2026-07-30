@@ -8,6 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.0/lib/msal-browser.min.js">// cache-bust: 1778597972
 </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100vh; }
@@ -2382,7 +2384,7 @@ async function showDetail(requestId) {
     html += sec('첨부파일') + filesHtml + apprHtml;
 
     document.getElementById('modal-content').innerHTML = html;
-    window._faCurrentDetail = { requestId, title: f.Title||'', faType: f.FAType||'' };
+    window._faCurrentDetail = { requestId, title: f.Title||'', faType: f.FAType||'', requesterEmail: f.RequesterEmail||'' };
     const pdfBtn = document.getElementById('btn-export-pdf');
     if (pdfBtn) pdfBtn.style.display = 'flex';
     const modal = document.getElementById('detail-modal');
@@ -2548,50 +2550,165 @@ function loading(v) { document.getElementById('loading').classList.toggle('show'
 function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
 function closeModal() { document.getElementById('detail-modal').style.display = 'none'; const pdfBtn=document.getElementById('btn-export-pdf'); if(pdfBtn) pdfBtn.style.display='none'; }
 
-// 상세보기 화면에 이미 렌더링된 내용을 그대로 재사용해 인쇄용 새 창을 여는 안전한 PDF 출력
-// (첨부파일 변환·PDF 병합 같은 외부 의존성 없이, 이미 정상적으로 그려진 HTML을 인쇄만 하는 방식이라 항상 동작함)
-function exportFaDetailPdf() {
-  const content = document.getElementById('modal-content').innerHTML;
-  const info = window._faCurrentDetail || {};
-  const title = info.title || ('FA Request #' + (info.requestId||''));
-  const now = new Date();
-  const p = n => String(n).padStart(2,'0');
-  const dateStr = `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}`;
-  const esc = s => String(s==null?'':s).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// GW와 동일한 방식: 결재 내용을 html2canvas로 캡처해 A4 페이지로 분할, 첨부파일까지 pdf-lib으로 병합한 실제 PDF 파일 다운로드
+async function exportFaDetailPdf() {
+  const btn = document.getElementById('btn-export-pdf');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ 생성 중...'; btn.disabled = true;
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)} - FA 상세내용</title>
-<style>
-  body{font-family:'Segoe UI',-apple-system,sans-serif;margin:0;color:#323130;background:#eef1f5}
-  .page{max-width:820px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 0 24px rgba(0,0,0,.06)}
-  .header{background:#1F4E79;color:#fff;padding:24px 32px}
-  .header .eyebrow{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;margin-bottom:6px}
-  .header h1{font-size:18px;margin:0 0 6px;font-weight:700}
-  .header .meta{color:rgba(255,255,255,.8);font-size:11.5px}
-  .body-pad{padding:24px 32px 40px}
-  .footer{font-size:10.5px;color:#9ca3af;margin-top:30px;border-top:1px solid #eee;padding-top:12px;text-align:right}
-  .print-btn{position:fixed;top:16px;right:16px;padding:10px 18px;background:#1F4E79;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:10}
-  a{color:#0078d4}
-  @media print{ .print-btn{display:none} body{background:#fff} .page{box-shadow:none;max-width:none} }
-</style></head>
-<body>
-  <button class="print-btn" onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button>
-  <div class="page">
-    <div class="header">
-      <div class="eyebrow">Star Truck Korea · FA Registration</div>
-      <h1>${esc(title)}</h1>
-      <div class="meta">FA Type: ${esc(info.faType||'-')} · 출력일시: ${dateStr}</div>
-    </div>
-    <div class="body-pad">
-      ${content}
-      <div class="footer">본 문서는 FA Registration 시스템에서 자동 생성되었습니다. © Star Truck Korea</div>
-    </div>
-  </div>
-</body></html>`;
+  try {
+    const { PDFDocument } = PDFLib;
+    const contentEl = document.getElementById('modal-content');
+    const _bannerNow = new Date();
+    const _ds = '출력일시: ' + _bannerNow.toLocaleDateString('ko-KR') + ' ' + _bannerNow.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
 
-  const w = window.open('', '_blank');
-  if (!w) { alert('팝업이 차단되어 PDF 출력 창을 열 수 없습니다. 팝업 차단을 해제해주세요.'); return; }
-  w.document.write(html);
-  w.document.close();
+    const cvs = await html2canvas(contentEl, {scale:2,useCORS:true,allowTaint:true,backgroundColor:'#fff',scrollY:0,windowWidth:700});
+
+    const mainDoc = await PDFDocument.create();
+
+    function makeHdrPng(left, right) {
+      const hc = document.createElement('canvas');
+      hc.width = 1190; hc.height = 28;
+      const hx = hc.getContext('2d');
+      const g = hx.createLinearGradient(0,0,hc.width,0);
+      g.addColorStop(0,'#1F4E79'); g.addColorStop(1,'#3b7dc4');
+      hx.fillStyle=g; hx.fillRect(0,0,hc.width,hc.height);
+      hx.fillStyle='#3b82f6'; hx.fillRect(0,hc.height-2,hc.width,2);
+      hx.fillStyle='#fff';
+      hx.font='500 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+      hx.textBaseline='middle'; hx.fillText(left,14,13);
+      hx.textAlign='right'; hx.font='400 12px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+      hx.fillStyle='rgba(255,255,255,.6)'; hx.fillText(right,hc.width-14,13);
+      return hc.toDataURL('image/png');
+    }
+    async function dataUrlToUint8(dataUrl) {
+      const res = await fetch(dataUrl);
+      const ab = await res.arrayBuffer();
+      return new Uint8Array(ab);
+    }
+
+    const A4W = 595, A4H = 842;
+    const marginPt = 34, hdrH = 22;
+    const printW_pt = A4W - marginPt*2;
+    const printableH_pt = A4H - marginPt*2 - hdrH;
+    const pxPerPt = cvs.width / A4W;
+    const sliceH_px = Math.round(printableH_pt * pxPerPt);
+    const numPages = Math.ceil(cvs.height / sliceH_px);
+
+    const hdrDataUrl = makeHdrPng('STK FA Registration · 자산등록 증빙 자료', _ds);
+    const hdrBytes = await dataUrlToUint8(hdrDataUrl);
+
+    for(let i = 0; i < numPages; i++) {
+      const page = mainDoc.addPage([A4W, A4H]);
+      const hdrImg = await mainDoc.embedPng(hdrBytes);
+      page.drawImage(hdrImg, {x:0, y:A4H-hdrH, width:A4W, height:hdrH});
+
+      const srcY = i * sliceH_px;
+      const sliceActual_px = Math.min(sliceH_px, cvs.height - srcY);
+      const sliceActual_pt = sliceActual_px / pxPerPt;
+
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = cvs.width;
+      sliceCanvas.height = sliceActual_px;
+      sliceCanvas.getContext('2d').drawImage(cvs, 0, srcY, cvs.width, sliceActual_px, 0, 0, cvs.width, sliceActual_px);
+
+      const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+      const sliceBytes = await dataUrlToUint8(sliceData);
+      const sliceImg = await mainDoc.embedJpg(sliceBytes);
+
+      page.drawImage(sliceImg, {
+        x: marginPt,
+        y: A4H - hdrH - marginPt - sliceActual_pt,
+        width: printW_pt,
+        height: sliceActual_pt
+      });
+    }
+
+    // ── 첨부파일 처리 (이미지는 직접 삽입, Office/PDF는 Graph API로 PDF 변환 후 병합) ──
+    const fileLinks = contentEl.querySelectorAll('.file-dl-link');
+    const _t = await token();
+
+    for(const link of fileLinks) {
+      const name = decodeURIComponent(link.dataset.name || '');
+      if(!name) continue;
+      const dId = decodeURIComponent(link.dataset.drive || '');
+      const iId = decodeURIComponent(link.dataset.id || '');
+      if(!dId || !iId) continue;
+      const ext = name.split('.').pop().toLowerCase();
+      const imgExts = ['jpg','jpeg','png','gif','webp'];
+
+      btn.innerHTML = '⏳ ' + name.substring(0,20) + '...';
+
+      try {
+        if(imgExts.includes(ext)) {
+          const res = await fetch('https://graph.microsoft.com/v1.0/drives/'+dId+'/items/'+iId+'/content', {headers:{Authorization:'Bearer '+_t}});
+          if(!res.ok) throw new Error(res.status);
+          const imgAb = await res.arrayBuffer();
+          const attachPage = mainDoc.addPage([A4W, A4H]);
+          const aHdrFn = makeHdrPng('첨부파일: '+name, _ds);
+          const aHdrBytes = await dataUrlToUint8(aHdrFn);
+          const aHdrImg = await mainDoc.embedPng(aHdrBytes);
+          attachPage.drawImage(aHdrImg, {x:0, y:A4H-hdrH, width:A4W, height:hdrH});
+          let embImg;
+          if(['jpg','jpeg'].includes(ext)) embImg = await mainDoc.embedJpg(new Uint8Array(imgAb));
+          else embImg = await mainDoc.embedPng(new Uint8Array(imgAb));
+          const {width:iW, height:iH} = embImg;
+          const ratio = Math.min(printW_pt/iW, (A4H-hdrH-marginPt*2)/iH);
+          attachPage.drawImage(embImg, {
+            x: marginPt,
+            y: A4H - hdrH - marginPt - iH*ratio,
+            width: iW*ratio, height: iH*ratio
+          });
+        } else {
+          const convertUrl = ext === 'pdf'
+            ? 'https://graph.microsoft.com/v1.0/drives/'+dId+'/items/'+iId+'/content'
+            : 'https://graph.microsoft.com/v1.0/drives/'+dId+'/items/'+iId+'/content?format=pdf';
+          const res = await fetch(convertUrl, {headers:{Authorization:'Bearer '+_t}});
+          if(!res.ok) throw new Error('변환실패 '+res.status);
+          const pdfBytes = new Uint8Array(await res.arrayBuffer());
+
+          const srcDoc = await PDFDocument.load(pdfBytes, {ignoreEncryption:true});
+          const copiedPages = await mainDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+
+          const aHdrFn2 = makeHdrPng('첨부파일: '+name, _ds);
+          const aHdrBytes2 = await dataUrlToUint8(aHdrFn2);
+
+          for(const pg of copiedPages) {
+            mainDoc.addPage(pg);
+            const aHdrImg2 = await mainDoc.embedPng(aHdrBytes2);
+            const {width:pgW, height:pgH} = pg.getSize();
+            pg.drawImage(aHdrImg2, {x:0, y:pgH-hdrH, width:pgW, height:hdrH});
+          }
+        }
+      } catch(e) {
+        console.warn('첨부파일 처리 실패:', name, e.message);
+        const errPage = mainDoc.addPage([A4W, A4H]);
+        const aHdrFn3 = makeHdrPng('첨부파일: '+name+' (변환 실패)', _ds);
+        const aHdrBytes3 = await dataUrlToUint8(aHdrFn3);
+        const aHdrImg3 = await mainDoc.embedPng(aHdrBytes3);
+        errPage.drawImage(aHdrImg3, {x:0, y:A4H-hdrH, width:A4W, height:hdrH});
+      }
+    }
+
+    // ── 최종 저장 ──
+    const finalBytes = await mainDoc.save();
+    const finalBlob = new Blob([finalBytes], {type:'application/pdf'});
+    const info = window._faCurrentDetail || {};
+    const reqEmail = (info.requesterEmail||'unknown').replace(/[^a-z0-9]/gi,'_');
+    const saveFileName = 'FA_'+(info.requestId||'req')+'_'+reqEmail+'_'+new Date().toISOString().substring(0,10)+'.pdf';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(finalBlob);
+    a.download = saveFileName;
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+
+  } catch(e) {
+    alert('PDF 생성 오류: ' + e.message);
+    console.error(e);
+  } finally {
+    btn.innerHTML = orig;
+    btn.disabled = false;
+  }
 }
 
 // ── INIT MSAL ──
