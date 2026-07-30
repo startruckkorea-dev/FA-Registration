@@ -910,6 +910,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
 <!-- DETAIL MODAL -->
 <div id="detail-modal" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
+    <button id="btn-export-pdf" onclick="exportFaDetailPdf()" title="상세내용 PDF 출력" style="display:none;position:absolute;top:10px;right:44px;background:#0078d4;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;align-items:center;gap:5px;transition:background .15s" onmouseover="this.style.background='#005a9e'" onmouseout="this.style.background='#0078d4'">🖨️ PDF 출력</button>
     <button class="modal-close" onclick="closeModal()">×</button>
     <div class="modal-title">신청 상세 내용</div>
     <div id="modal-content"></div>
@@ -2376,6 +2377,9 @@ async function showDetail(requestId) {
     html += sec('첨부파일') + filesHtml + apprHtml;
 
     document.getElementById('modal-content').innerHTML = html;
+    window._faCurrentDetail = { requestId, title: f.Title||'', faType: f.FAType||'' };
+    const pdfBtn = document.getElementById('btn-export-pdf');
+    if (pdfBtn) pdfBtn.style.display = 'flex';
     const modal = document.getElementById('detail-modal');
     modal.style.display = 'flex';
   } catch(e) { alert('상세 조회 오류: ' + e.message); }
@@ -2537,7 +2541,53 @@ document.addEventListener('click', async function(e) {
 
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
 function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
-function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
+function closeModal() { document.getElementById('detail-modal').style.display = 'none'; const pdfBtn=document.getElementById('btn-export-pdf'); if(pdfBtn) pdfBtn.style.display='none'; }
+
+// 상세보기 화면에 이미 렌더링된 내용을 그대로 재사용해 인쇄용 새 창을 여는 안전한 PDF 출력
+// (첨부파일 변환·PDF 병합 같은 외부 의존성 없이, 이미 정상적으로 그려진 HTML을 인쇄만 하는 방식이라 항상 동작함)
+function exportFaDetailPdf() {
+  const content = document.getElementById('modal-content').innerHTML;
+  const info = window._faCurrentDetail || {};
+  const title = info.title || ('FA Request #' + (info.requestId||''));
+  const now = new Date();
+  const p = n => String(n).padStart(2,'0');
+  const dateStr = `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}`;
+  const esc = s => String(s==null?'':s).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)} - FA 상세내용</title>
+<style>
+  body{font-family:'Segoe UI',-apple-system,sans-serif;margin:0;color:#323130;background:#eef1f5}
+  .page{max-width:820px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 0 24px rgba(0,0,0,.06)}
+  .header{background:#1F4E79;color:#fff;padding:24px 32px}
+  .header .eyebrow{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;margin-bottom:6px}
+  .header h1{font-size:18px;margin:0 0 6px;font-weight:700}
+  .header .meta{color:rgba(255,255,255,.8);font-size:11.5px}
+  .body-pad{padding:24px 32px 40px}
+  .footer{font-size:10.5px;color:#9ca3af;margin-top:30px;border-top:1px solid #eee;padding-top:12px;text-align:right}
+  .print-btn{position:fixed;top:16px;right:16px;padding:10px 18px;background:#1F4E79;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:10}
+  a{color:#0078d4}
+  @media print{ .print-btn{display:none} body{background:#fff} .page{box-shadow:none;max-width:none} }
+</style></head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button>
+  <div class="page">
+    <div class="header">
+      <div class="eyebrow">Star Truck Korea · FA Registration</div>
+      <h1>${esc(title)}</h1>
+      <div class="meta">FA Type: ${esc(info.faType||'-')} · 출력일시: ${dateStr}</div>
+    </div>
+    <div class="body-pad">
+      ${content}
+      <div class="footer">본 문서는 FA Registration 시스템에서 자동 생성되었습니다. © Star Truck Korea</div>
+    </div>
+  </div>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('팝업이 차단되어 PDF 출력 창을 열 수 없습니다. 팝업 차단을 해제해주세요.'); return; }
+  w.document.write(html);
+  w.document.close();
+}
 
 // ── INIT MSAL ──
 (async () => {
