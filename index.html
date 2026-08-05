@@ -1973,10 +1973,10 @@ function fmtDate(iso) {
 }
 
 async function loadMyList() {
-  if(!siteId){ const s = await api('/sites/'+SITE_PATH); siteId = s.id; }
   const tbody = document.getElementById('list-body');
   dynLoadStart('FA 데이터 불러오는 중');
   try {
+    if(!siteId){ const s = await api('/sites/'+SITE_PATH); siteId = s.id; }
     const data = await apiAll('/sites/' + siteId + '/lists/FA_Requests/items?$expand=fields&$top=500');
     const mine = data.value
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
@@ -1999,10 +1999,10 @@ async function checkApprover() {
 }
 
 async function loadApprovalQueue() {
-  if(!siteId){ const s = await api('/sites/'+SITE_PATH); siteId = s.id; }
   const tbody = document.getElementById('appr-body');
   dynLoadStart('결재 정보 확인 중');
   try {
+    if(!siteId){ const s = await api('/sites/'+SITE_PATH); siteId = s.id; }
     // FA_Approvals + FA_Requests 동시 로드 (Promise.all로 병렬 1회)
     const [apprData, reqData] = await Promise.all([
       apiAll('/sites/' + siteId + "/lists/FA_Approvals/items?$expand=fields&$filter=fields/Status eq '대기'"),
