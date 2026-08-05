@@ -1973,6 +1973,7 @@ function fmtDate(iso) {
 }
 
 async function loadMyList() {
+  if(!siteId){ const s = await api('/sites/'+SITE_PATH); siteId = s.id; }
   const tbody = document.getElementById('list-body');
   dynLoadStart('FA 데이터 불러오는 중');
   try {
@@ -1998,6 +1999,7 @@ async function checkApprover() {
 }
 
 async function loadApprovalQueue() {
+  if(!siteId){ const s = await api('/sites/'+SITE_PATH); siteId = s.id; }
   const tbody = document.getElementById('appr-body');
   dynLoadStart('결재 정보 확인 중');
   try {
