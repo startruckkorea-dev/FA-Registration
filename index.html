@@ -1860,7 +1860,7 @@ async function submitRequest(faType) {
     const item = await api('/sites/' + siteId + '/lists/FA_Requests/items', 'POST', { fields });
     const reqId = item.id;
     const _faPrefix = title.split('-tmp')[0];
-    await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Title: _faPrefix + '-' + new Date().toISOString().slice(0,10) + '_ID-' + reqId } });
+    await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Title: _faPrefix + '-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId } });
 
     // Upload files
     const fileLinks = [];
@@ -1925,13 +1925,13 @@ async function submitRequest(faType) {
     }
     for (const a of approvers) {
       await api('/sites/' + siteId + '/lists/FA_Approvals/items', 'POST', { fields: {
-        Title: _faPrefix + '-' + new Date().toISOString().slice(0,10) + '_ID-' + reqId + '-' + a.order, RequestID: parseInt(reqId),
+        Title: _faPrefix + '-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId + '-' + a.order, RequestID: parseInt(reqId),
         ApproverEmail: a.email, ApproverName: a.name,
         ApproverRole: a.role, ApprovalOrder: a.order,
         Status: a.order === 1 ? '대기' : '대기(잠김)'
       }});
     }
-    const _finalTitle = _faPrefix + '-' + new Date().toISOString().slice(0,10) + '_ID-' + reqId;
+    const _finalTitle = _faPrefix + '-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId;
     showAlert('상신이 완료되었습니다.', _finalTitle);
     if (faType === 'Registration') resetRegForm();
     else if (faType === 'Disposal') resetDisposalForm();
@@ -2720,7 +2720,7 @@ async function exportFaDetailPdf() {
     const finalBlob = new Blob([finalBytes], {type:'application/pdf'});
     const info = window._faCurrentDetail || {};
     const reqEmail = (info.requesterEmail||'unknown').replace(/[^a-z0-9]/gi,'_');
-    const saveFileName = 'FA_'+(info.requestId||'req')+'_'+reqEmail+'_'+new Date().toISOString().substring(0,10)+'.pdf';
+    const saveFileName = 'FA_'+(info.requestId||'req')+'_'+reqEmail+'_'+new Date(new Date().getTime()+9*3600*1000).toISOString().substring(0,10)+'.pdf';
     const a = document.createElement('a');
     a.href = URL.createObjectURL(finalBlob);
     a.download = saveFileName;
