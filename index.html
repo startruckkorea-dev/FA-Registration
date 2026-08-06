@@ -259,11 +259,11 @@ body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100
         <span id="user-name"></span>
         <button id="btn-logout" onclick="signOut()">로그아웃</button>
       </div>
-      <a href="https://aps.startruckkorea.com/" target="_self" title="STK 통합 결재함" style="text-decoration:none;display:inline-flex;align-items:center;gap:7px;background:#0078d4;color:#fff;border-radius:6px;padding:7px 14px;font-size:.8rem;font-weight:600;font-family:'Segoe UI',sans-serif;letter-spacing:-.2px;box-shadow:0 1px 4px rgba(0,120,212,.25);transition:background .15s" onmouseover="this.style.background='#106ebe'" onmouseout="this.style.background='#0078d4'"><span style="font-size:1rem;line-height:1">📬</span><span>돌아가기</span></a>
+      <a id="fa-back-link" href="https://aps.startruckkorea.com/" target="_self" title="STK 통합 결재함" style="text-decoration:none;display:inline-flex;align-items:center;gap:7px;background:#0078d4;color:#fff;border-radius:6px;padding:7px 14px;font-size:.8rem;font-weight:600;font-family:'Segoe UI',sans-serif;letter-spacing:-.2px;box-shadow:0 1px 4px rgba(0,120,212,.25);transition:background .15s" onmouseover="this.style.background='#106ebe'" onmouseout="this.style.background='#0078d4'"><span style="font-size:1rem;line-height:1">📬</span><span>돌아가기</span></a>
     </div>
   </div>
 
-  <div class="tabs">
+  <div class="tabs" id="fa-tabs">
     <button class="tab active" id="tab-reg-btn" onclick="switchTab('reg')">FA Registration</button>
     <button class="tab" id="tab-disposal-btn" onclick="switchTab('disposal')">FA Disposal</button>
     <button class="tab" id="tab-transfer-btn" onclick="switchTab('transfer')">FA Transfer</button>
@@ -1195,7 +1195,14 @@ async function boot(account) {
 
   // URL로 특정 요청 상세를 바로 열기 (다른 시스템에서 연동 링크로 진입할 때)
   const _openId = new URLSearchParams(location.search).get('openId');
-  if (_openId) { showDetail(_openId); history.replaceState(null, '', location.pathname); }
+  if (_openId) {
+    const _backLink = document.getElementById('fa-back-link');
+    const _tabs = document.getElementById('fa-tabs');
+    if (_backLink) _backLink.style.display = 'none';
+    if (_tabs) _tabs.style.display = 'none';
+    showDetail(_openId);
+    history.replaceState(null, '', location.pathname);
+  }
 }
 
 // ── EMPLOYEES ──
