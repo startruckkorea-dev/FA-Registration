@@ -13,6 +13,9 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #f3f2f1; min-height: 100vh; }
+/* ?openId= 딥링크로 진입한 단독 상세보기 모드 — 뒤에 깔린 작성 폼/헤더/탭은 볼 일이 없으므로
+   통째로 숨기고 배경색만 남긴다. 모달은 #app 바깥에 있어 영향받지 않음. */
+body.standalone-detail #app { display: none !important; }
 
 
 
@@ -1196,10 +1199,9 @@ async function boot(account) {
   // URL로 특정 요청 상세를 바로 열기 (다른 시스템에서 연동 링크로 진입할 때)
   const _openId = new URLSearchParams(location.search).get('openId');
   if (_openId) {
-    const _backLink = document.getElementById('fa-back-link');
-    const _tabs = document.getElementById('fa-tabs');
-    if (_backLink) _backLink.style.display = 'none';
-    if (_tabs) _tabs.style.display = 'none';
+    // 단독 상세보기 모드: 작성 폼·헤더·탭은 필요 없으므로 배경색만 남기고 전부 숨김
+    _standaloneDetail = true;
+    document.body.classList.add('standalone-detail');
     showDetail(_openId);
     history.replaceState(null, '', location.pathname);
   }
@@ -2561,7 +2563,13 @@ document.addEventListener('click', async function(e) {
 
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
 function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
-function closeModal() { document.getElementById('detail-modal').style.display = 'none'; const pdfBtn=document.getElementById('btn-export-pdf'); if(pdfBtn) pdfBtn.style.display='none'; }
+// ?openId= 딥링크로 진입한 단독 상세보기 모드 여부 (다른 시스템에서 연동 링크로 들어온 경우)
+let _standaloneDetail = false;
+function closeModal() {
+  // 단독 모드에서 모달만 닫으면 텅 빈 배경만 남으므로 탭 자체를 닫고, 브라우저가 막으면 모달을 유지
+  if(_standaloneDetail){ window.close(); return; }
+  document.getElementById('detail-modal').style.display = 'none'; const pdfBtn=document.getElementById('btn-export-pdf'); if(pdfBtn) pdfBtn.style.display='none';
+}
 
 // GW와 동일한 방식: 결재 내용을 html2canvas로 캡처해 A4 페이지로 분할, 첨부파일까지 pdf-lib으로 병합한 실제 PDF 파일 다운로드
 async function exportFaDetailPdf() {
