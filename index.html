@@ -2125,6 +2125,74 @@ async function confirmApproval() {
   await processApproval(apprId, action, reqId, role, comment);
 }
 
+// ── 통합 결재함(타 시스템) 승인·반려 ──────────────────────────────────
+// 2026-08-12: 호출부(uniShowConfirm)만 있고 함수 정의가 누락되어 통합 결재함의
+// 승인·반려 버튼 4곳이 모두 동작하지 않던 문제를 수정.
+// FA 전용 processApproval은 FA_Approvals/FA_Requests가 하드코딩되어 있어 타 시스템에 쓸 수 없다.
+// sysKey로 _UNIFIED_SYSTEMS 정의를 찾아 해당 시스템의 리스트를 사용한다.
+let _uniPending = null;
+function uniShowConfirm(apprId, action, reqId, sysKey) {
+  _uniPending = { apprId, action, reqId, sysKey };
+  const isReject = action === '반려';
+  document.getElementById('confirm-title').textContent = isReject ? '❌ 반려 확인' : '✅ 승인 확인';
+  document.getElementById('confirm-sub').textContent = isReject
+    ? '반려 사유를 입력해주세요. (필수)' : '이 신청을 승인하시겠습니까?';
+  const commentEl = document.getElementById('confirm-comment');
+  commentEl.value = '';
+  commentEl.placeholder = isReject ? '반려 사유 입력 (필수)' : '의견 입력 (선택사항)';
+  const okBtn = document.getElementById('confirm-ok-btn');
+  okBtn.textContent = isReject ? '반려' : '승인';
+  okBtn.style.background = isReject ? '#a4262c' : '#107c10';
+  okBtn.style.color = '#fff';
+  okBtn.onclick = uniConfirmApproval;
+  document.getElementById('confirm-modal').style.display = 'flex';
+}
+async function uniConfirmApproval() {
+  if (!_uniPending) return;
+  const { apprId, action, reqId, sysKey } = _uniPending;
+  const comment = document.getElementById('confirm-comment').value.trim();
+  if (action === '반려' && !comment) { alert('반려 사유를 입력해주세요.'); return; }
+  closeConfirm();
+  _uniPending = null;
+  await uniProcessApproval(apprId, action, reqId, sysKey, comment);
+}
+async function uniProcessApproval(apprId, action, reqId, sysKey, comment='') {
+  const sys = (typeof _UNIFIED_SYSTEMS !== 'undefined' ? _UNIFIED_SYSTEMS : []).find(s => s.key === sysKey);
+  if (!sys) { alert('시스템 정보를 확인할 수 없습니다: ' + sysKey); return; }
+  const APR = sys.list, REQ = sys.reqList;
+  loading(true);
+  try {
+    // 다른 창에서 이미 처리했는지 먼저 확인 (FA와 동일한 중복 처리 방지)
+    const _cur = await api('/sites/'+siteId+'/lists/'+APR+'/items/'+apprId+'?$expand=fields');
+    const _curStatus = (_cur.fields.Status?.Value || _cur.fields.Status || '').trim();
+    if (_curStatus !== '대기') {
+      showAlert('이미 처리된 결재 항목입니다.','다른 창에서 처리되었거나 이미 완료된 항목입니다.','⚠️');
+      loadUnifiedBadge().catch(()=>{});
+      return;
+    }
+    await api('/sites/'+siteId+'/lists/'+APR+'/items/'+apprId, 'PATCH', {
+      fields: { Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }
+    });
+    if (action === '반려') {
+      await api('/sites/'+siteId+'/lists/'+REQ+'/items/'+reqId, 'PATCH', { fields: { Status: '반려' } });
+    } else {
+      // 다음 대기(잠김) 결재자를 순서대로 깨운다. 없으면 최종 승인완료.
+      let _ap=[], _nu='/sites/'+siteId+'/lists/'+APR+"/items?$expand=fields&$top=500&$filter=fields/RequestID eq "+parseInt(reqId)+" and fields/Status eq '대기(잠김)'";
+      while(_nu){ const _p=await api(_nu); _ap=_ap.concat(_p.value); _nu=_p['@odata.nextLink']?_p['@odata.nextLink'].replace('https://graph.microsoft.com/v1.0',''):null; }
+      const next = _ap.sort((a,b)=>a.fields.ApprovalOrder-b.fields.ApprovalOrder);
+      if (next.length) {
+        await api('/sites/'+siteId+'/lists/'+APR+'/items/'+next[0].id, 'PATCH', { fields: { Status: '대기' } });
+      } else {
+        await api('/sites/'+siteId+'/lists/'+REQ+'/items/'+reqId, 'PATCH', { fields: { Status: '승인완료' } });
+      }
+    }
+    showAlert(action + ' 처리되었습니다.', sys.name, action === '반려' ? '❌' : '✅');
+    if (typeof loadUnifiedData === 'function') await loadUnifiedData();
+    loadUnifiedBadge().catch(()=>{});
+  } catch(e) { alert('오류: ' + e.message); }
+  finally { loading(false); }
+}
+
 async function processApproval(apprId, action, reqId, role, comment='') {
   loading(true);
   try {
