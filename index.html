@@ -2263,7 +2263,7 @@ async function showDetail(requestId) {
       row('제목', f.Title) +
       row('신청자', f.RequesterEmail) +
       row('FA 유형', '<span style="background:#e8f4ff;color:#0078d4;padding:2px 8px;border-radius:10px;font-size:12px">' + (f.FAType||'') + '</span>') +
-      row('상태', '<span style="font-weight:600;color:' + (f.Status==='승인완료'?'#107c10':f.Status==='반려'?'#a4262c':'#7d5700') + '">' + (f.Status||'') + '</span>') +
+      row('상태', '<span class="badge-' + (function(s){var v=(s||'대기').trim();return v.indexOf('철회')===0?'철회':(v==='승인'?'승인완료':v);})(f.Status) + '">' + (f.Status||'대기') + '</span>') +
       row('신청일', f.RequestDate ? fmtDate(f.RequestDate) : '') +
       (f.FACode ? row('FA Code', '<strong style="color:#107c10">' + f.FACode + '</strong>') : '');
 
