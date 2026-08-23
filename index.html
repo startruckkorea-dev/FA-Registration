@@ -1609,13 +1609,6 @@ function calcCostTotal() {
     notice.style.display = 'none';
   }
 }
-function fmtNum(val) {
-  // 숫자와 점(소수)만 허용, 콤마 제거 후 포맷
-  const raw = String(val).replace(/[^0-9.]/g, '');
-  if (raw === '' || raw === '.') return raw;
-  const num = parseFloat(raw);
-  return isNaN(num) ? '' : num.toLocaleString();
-}
 function parseNum(val) {
   return parseFloat(String(val).replace(/[^0-9.]/g, '')) || 0;
 }
@@ -2109,7 +2102,6 @@ function closeConfirm() {
   document.getElementById('confirm-modal').style.display = 'none';
   _pendingApproval = null;
 }
-function showToast(msg, duration=4000) { showAlert(msg); }
 function showAlert(title, sub='', icon='✅') {
   document.getElementById('fa-alert-icon').textContent = icon;
   document.getElementById('fa-alert-title').textContent = title;
@@ -3124,15 +3116,6 @@ async function loadUnifiedBadge() {
   if(badge) { badge.textContent = total; badge.style.display = total > 0 ? 'inline-block' : 'none'; }
 }
 
-async function openUnifiedAppr() {
-  document.getElementById('unified-modal').classList.add('open');
-  document.getElementById('unified-body').innerHTML = '';
-  await loadUnifiedData();
-}
-function closeUnifiedAppr() {
-  document.getElementById('unified-modal').classList.remove('open');
-  closeUniDetail();
-}
 
 async function loadUnifiedData() {
   if (!siteId || !user) return;
