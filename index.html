@@ -1341,7 +1341,8 @@ function initAllForms() {
       if (sel) sel.innerHTML = opts;
     });
   });
-  const today = new Date().toISOString().split('T')[0];
+  // KST(+9) 기준 오늘. UTC 그대로 쓰면 00~09시에 전날로 채워진다.
+  const today = new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10);
   ['reg-submission-date','dis-submission-date','tfr-submission-date'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = today;
@@ -2009,7 +2010,7 @@ function resetRegForm() {
     const el = document.getElementById(id);
     if (el) { el.value = el.tagName === 'SELECT' ? '' : ''; }
   });
-  document.getElementById('reg-submission-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('reg-submission-date').value = new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10);
   regFiles = []; renderFiles('reg');
   ['reg-a1','reg-a2'].forEach(p => {
     document.getElementById(p + '-dept').value = '';
