@@ -268,6 +268,23 @@ html.standalone-detail.detail-ready #standalone-loader { display: none !importan
 .badge-철회{background:#f1f5f9;color:#64748b;border-radius:10px;padding:2px 8px;font-size:.68rem;font-weight:600}
 </style>
 <script>
+
+// 결재 의견은 사용자가 직접 입력하는 자유 텍스트라 그대로 출력하면 저장형 XSS 가 된다.
+// SharePoint 다중 텍스트는 <div class="ExternalClass..."> 래퍼와 숫자 엔티티를 붙여 저장하므로
+// spText 로 걷어낸 뒤 escHtml 로 이스케이프한다. (mc 의 검증된 구현을 이식)
+function escHtml(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function spText(s){
+  return String(s==null?'':s)
+    .replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>/gi,'\n').replace(/<[^>]*>/g,'')
+    .replace(/&nbsp;/gi,' ')
+    .replace(/&#(\d+);/g,function(m,d){var n=parseInt(d,10);return (n>=32&&n<=1114111)?String.fromCodePoint(n):m;})
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'")
+    .replace(/&amp;/g,'&').replace(/\n{3,}/g,'\n\n').trim();
+}
+function safeText(s){ return escHtml(spText(s)); }
 // ?openId= 단독 상세보기 모드 판별을 최대한 앞당긴다.
 // DOMContentLoaded까지 기다리면 작성 폼이 1~4초간 그대로 보였다가 사라지는 깜빡임이 생기므로,
 // <head> 파싱 시점에 <html>에 클래스를 붙여 #app이 처음부터 렌더링되지 않게 한다.
@@ -2305,7 +2322,7 @@ async function showDetail(requestId) {
               '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _r=af.ApproverRole||'',_o=String(af.ApprovalOrder||'');const _n=_r.startsWith(_o+'차')?_r.slice(_o.length+1).trim():_r;const _p=_n.replace(/^결재자\s*/,'');const _q=_p.startsWith('(')?_p:(_p?'('+_p+')':'');return '<b>'+_o+'차</b> 결재자'+_q;})() + '</div>' +
               '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + (af.ApproverName||'') + ' · ' + (af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
-              (af.Comment ? '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + af.Comment + '</div>' : '') +
+              (af.Comment ? '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + safeText(af.Comment) + '</div>' : '') +
               '</div><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:700;font-size:12px;white-space:nowrap;margin-left:8px">' + (af.Status||'') + '</span></div>';
           }).join('') + '</div>';
         // 내 결재 대기 건 버튼
