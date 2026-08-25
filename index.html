@@ -340,7 +340,7 @@ if (new URLSearchParams(location.search).get('openId')) {
           <input type="text" id="reg-po-no" placeholder="xxxxxxxxx (9자리 숫자)">
         </div>
         <div class="form-group">
-          <label>자산취득일 (Acquisition Date) <span class="req">*</span></label>
+          <label>자산취득일 <span style="font-size:.88em;opacity:.72">(Acquisition Date)</span> <span class="req">*</span></label>
           <input type="date" id="reg-acquisition-date">
         </div>
       </div>
@@ -2334,7 +2334,7 @@ async function showDetail(requestId) {
         row('자산명 (Description)', f.Description) +
         row('Submission Date', f.SubmissionDate) +
         row('PO No.', f.PONo) +
-        row('자산취득일 (Acquisition Date)', f.AcquisitionDate) +
+        row('자산취득일<br><span style="font-size:.88em;opacity:.72;white-space:nowrap">(Acquisition Date)</span>', f.AcquisitionDate) +
         row('원가부서 (CCTR)', f.CCTR) +
         row('Type', f.RequestType) +
         row('GL Account', f.GLAccount) +
@@ -2362,7 +2362,7 @@ async function showDetail(requestId) {
           const spParts = String(f.SellingPrice||'0').split('|');
           const sp = spParts[0] || '0';
           const rc = spParts[1] || '';
-          return row('Selling Price (부가세 제외)', sp && sp !== '0' ? Number(sp.replace(/,/g,'')).toLocaleString() + ' 원' : '-') +
+          return row('Selling Price<br><span style="font-size:.88em;opacity:.72;white-space:nowrap">(부가세 제외)</span>', sp && sp !== '0' ? Number(sp.replace(/,/g,'')).toLocaleString() + ' 원' : '-') +
                  row('Est. Repair Cost', rc && rc !== '' ? Number(rc.replace(/,/g,'')).toLocaleString() + ' 원' : '-');
         })() +
         row('Reason of Loss / Damage', f.Reason, true);
