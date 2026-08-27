@@ -601,7 +601,7 @@ if (new URLSearchParams(location.search).get('openId')) {
         </div>
         <div class="form-group">
           <label>Est. Repair Cost (손상 시)</label>
-          <input type="text" id="dis-repair-cost" placeholder="수리비 예상 금액" disabled oninput="formatNumber(this);calcCostTotal()">
+          <input type="text" id="dis-repair-cost" placeholder="수리비 예상 금액" disabled oninput="formatNumber(this)">
         </div>
       </div>
       <div class="form-row full">
@@ -1527,7 +1527,7 @@ function addCostRow() {
   const tdType = document.createElement('td');
   const sel = document.createElement('select');
   sel.style.cssText = 'width:100%;border:1px solid #d2d0ce;border-radius:4px;padding:4px;font-size:12px';
-  sel.onchange = function() { onCostTypeChange(this, rid); };
+  sel.onchange = function() { onCostTypeChange(this); };
   [['', '-- 선택 --'], ['처분비용', '처분비용'], ['매각금액', '매각금액']].forEach(([v, t]) => {
     const opt = document.createElement('option'); opt.value = v; opt.textContent = t; sel.appendChild(opt);
   });
@@ -1583,14 +1583,7 @@ function addCostRow() {
   [tdCR, tdType, tdBP, tdReason, tdCCTR, tdCurr, tdRate, tdAmt].forEach(td => tr.appendChild(td));
   document.getElementById('dis-cost-rows').appendChild(tr);
 }
-function onCostTypeChange(sel, rid) {
-  const crCell = document.getElementById('cr-' + rid);
-  if (!crCell) return;
-  if (sel.value === '처분비용') { crCell.textContent = 'C'; crCell.style.color = '#a4262c'; }
-  else if (sel.value === '매각금액') { crCell.textContent = 'R'; crCell.style.color = '#107c10'; }
-  else { crCell.textContent = '-'; crCell.style.color = '#605e5c'; }
-  calcCostTotal();
-}
+
 // calcNBV: onAssetAmtInput으로 통합
 function calcCostTotal() {
   let total = 0;
@@ -1687,12 +1680,19 @@ function onCostAmtInput(input) {
   const amtEl  = tr ? tr.querySelector('.cost-amt-inp')  : null;
   calcCostTotal();
 }
+// 2026-04-20 최초 구현부터 같은 이름의 정의가 파일 안에 두 벌 있었고,
+// 뒤에 선언된 쪽이 앞을 덮어써서 이 함수는 실행되지 않았다.
+// 실행되던 쪽에는 calcCostTotal() 호출이 없어, 매각금액을 입력해도
+// 비용 합계와 일치 검사가 갱신되지 않았다. (2026-08-27 정리)
 function formatNumber(input) {
   // Selling price, Repair cost 등 단독 필드용
   const raw = input.value.replace(/[^0-9.]/g, '');
   input.value = raw === '' ? '' : (parseFloat(raw)||0).toLocaleString();
   calcCostTotal();
 }
+// 같은 이름의 정의가 두 벌이었고, 앞의 것은 cr-{rid} 요소를 찾는 방식이었으나
+// 그 id 를 만드는 코드가 파일 어디에도 없어 동작할 수 없었다. 뒤의 이 정의가 실행돼 왔다.
+// 화면 동작을 바꾸지 않기 위해 색상은 현재 값을 그대로 둔다. (2026-08-27 정리)
 function onCostTypeChange(sel) {
   const row = sel.closest('tr');
   const crCell = row.querySelector('td:first-child');
@@ -1711,12 +1711,7 @@ function calcNBV(input) {
   inputs[inputs.length-1].dataset.raw = acq - depr;
 }
 
-function formatNumber(input) {
-  const raw = input.value.replace(/,/g, '');
-  if (!isNaN(raw) && raw !== '') {
-    input.value = Number(raw).toLocaleString();
-  }
-}
+
 
 
 // ── FILES ──
@@ -2691,7 +2686,14 @@ document.addEventListener('click', async function(e) {
 });
 
 function loading(v) { document.getElementById('loading').classList.toggle('show', v); }
-function showError(msg) { const el = document.getElementById('login-error'); el.style.display = 'block'; el.textContent = '오류: ' + msg; }
+// 마크업의 id 는 login-err 인데 login-error 를 찾고 있어, el 이 null 이 되면서
+// el.style 접근에서 TypeError 가 났다. 로그인 실패 안내가 표시되지 않던 원인. (2026-08-27 수정)
+function showError(msg) {
+  const el = document.getElementById('login-err');
+  if (!el) { alert('오류: ' + msg); return; }
+  el.style.display = 'block';
+  el.textContent = '오류: ' + msg;
+}
 
 
 // 단독 모드에서 상세를 닫을 때: 탭 닫기를 시도하되, 브라우저가 막으면(링크에 rel="noopener"가 붙어
