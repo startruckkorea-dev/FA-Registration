@@ -3384,6 +3384,25 @@ function _wdBtn(itemId, aprList, reqList, status) {
    가로 여백과 글자 크기는 열 수에 맞춰 시스템별로 이미 정한 값이라 두었다. */
 .list-table td { padding-top:6px; padding-bottom:6px; line-height:20px; }
 .list-table th { padding-top:7px; padding-bottom:7px; line-height:16px; }
+/* ── 타이포그래피를 Goodwill(GW) 기준으로 통일 (09-08) ──
+   서체는 원래 같았고(Segoe UI), 크기 체계가 px(13·14·18)라 GW 의 rem 체계(.74~1.1rem)보다 한 단계씩 컸다.
+   GW 의 같은 이름 규칙 값을 그대로 옮긴다. 목록·결재함·관리자 표는 GW 처럼 .74rem / 머리글 .68rem. */
+.header .title{font-size:1.1rem;font-weight:700}
+.card-title{font-size:.9rem;font-weight:700;margin-bottom:18px}
+.section-title{font-size:.82rem;margin:18px 0 12px;padding:5px 10px}
+.form-group label{font-size:.75rem;font-weight:600;color:#323130}
+.form-group input,.form-group select,.form-group textarea{font-size:.82rem}
+.appr-block .appr-title{font-size:.78rem}
+.btn-primary,.btn-secondary{font-size:.85rem;padding:8px 24px;font-family:inherit}
+.list-table{font-size:.82rem}
+#tab-admin .list-table,#tab-approval .list-table,#tab-list .list-table{font-size:.74rem}
+#tab-admin .list-table th,#tab-approval .list-table th,#tab-list .list-table th{font-size:.68rem;line-height:16px}
+.badge{font-size:.68rem;font-weight:600}
+.modal-title{font-size:1rem;font-weight:700;padding-bottom:10px;border-bottom:1px solid #edebe9}
+.modal-close{font-size:1.2rem}
+.modal-row{font-size:.82rem}
+.modal-label{font-size:.75rem}
+.hint,.file-area .hint,.notice,.file-item{font-size:.75rem}
 /* 배지는 inline-block 이라 자기 높이로 행을 밀어 올린다. 줄높이를 함께 낮춘다. */
 .list-table td .badge,
 .list-table td [class^="badge-"],
