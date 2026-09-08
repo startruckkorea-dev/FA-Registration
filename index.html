@@ -286,8 +286,7 @@ html.standalone-detail.detail-ready #standalone-loader { display: none !importan
 .list-table tbody tr[onclick]:hover td{background:#f0f6ff}
 .badge-type{background:#e1f0ff;color:#0078d4;border-radius:10px;padding:2px 8px;font-size:.68rem;font-weight:600;white-space:nowrap}
 /* 유형별 색 — 뜻이 드러나게. Registration(새로 들어옴)=파랑, Disposal(내보냄)=붉은 장미색, Transfer(옮김)=호박색.
-   상태 배지(승인완료 초록·반려 빨강)와 겹치지 않도록 Disposal 은 반려보다 옅게 잡았다. 앞에 작은 점으로 한 번 더 구분. */
-.badge-type::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px;opacity:.85}
+   상태 배지(승인완료 초록·반려 빨강)와 겹치지 않도록 Disposal 은 반려보다 옅게 잡았다. */
 .badge-type-registration{background:#e1f0ff;color:#0f5ea8}
 .badge-type-disposal{background:#fde7ec;color:#b4234a}
 .badge-type-transfer{background:#fff4ce;color:#8a5a00}
@@ -1001,7 +1000,7 @@ if (new URLSearchParams(location.search).get('openId')) {
       </div>
       <table class="list-table">
         <thead><tr>
-          <th style="width:36px">번호</th><th style="width:186px">신청자</th><th style="width:92px">유형</th><th style="width:172px">제목</th><th>FA Code</th><th style="width:66px">상태</th><th style="width:112px">신청일</th>
+          <th style="width:36px">번호</th><th style="width:174px">신청자</th><th style="width:92px">유형</th><th style="width:172px">제목</th><th>FA Code</th><th style="width:78px">상태</th><th style="width:112px">신청일</th>
         </tr></thead>
         <tbody id="admin-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
       </table>
@@ -3423,6 +3422,8 @@ function _wdBtn(itemId, aprList, reqList, status) {
    제목 뒤에 빈 공간이 남지 않고, 메모가 붙은 긴 코드가 잘리는 폭도 넓어진다. */
 #tab-admin .list-table td.c-code{font-size:.74rem}
 #tab-admin .list-table td.c-code strong{white-space:nowrap}
+/* 상태 배지는 말줄임 대상이 아니다 — 열 폭(78)을 배지에 맞췄으므로 잘리지 않게 둔다. */
+#tab-admin .list-table td .badge{overflow:visible}
 /* 배지는 inline-block 이라 자기 높이로 행을 밀어 올린다. 줄높이를 함께 낮춘다. */
 .list-table td .badge,
 .list-table td [class^="badge-"],
