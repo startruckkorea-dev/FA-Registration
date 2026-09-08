@@ -284,7 +284,13 @@ html.standalone-detail.detail-ready #standalone-loader { display: none !importan
 .list-table td{padding:9px 12px;border-bottom:1px solid #edebe9;color:#323130;white-space:nowrap}
 .list-table tr:hover td{background:#f9f8f7;cursor:pointer}
 .list-table tbody tr[onclick]:hover td{background:#f0f6ff}
-.badge-type{background:#e1f0ff;color:#0078d4;border-radius:10px;padding:2px 8px;font-size:.68rem;font-weight:600}
+.badge-type{background:#e1f0ff;color:#0078d4;border-radius:10px;padding:2px 8px;font-size:.68rem;font-weight:600;white-space:nowrap}
+/* 유형별 색 — 뜻이 드러나게. Registration(새로 들어옴)=파랑, Disposal(내보냄)=붉은 장미색, Transfer(옮김)=호박색.
+   상태 배지(승인완료 초록·반려 빨강)와 겹치지 않도록 Disposal 은 반려보다 옅게 잡았다. 앞에 작은 점으로 한 번 더 구분. */
+.badge-type::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px;opacity:.85}
+.badge-type-registration{background:#e1f0ff;color:#0f5ea8}
+.badge-type-disposal{background:#fde7ec;color:#b4234a}
+.badge-type-transfer{background:#fff4ce;color:#8a5a00}
 .badge-대기{background:#fff4ce;color:#7d5700;border-radius:10px;padding:2px 8px;font-size:.68rem;font-weight:600}
 .badge-승인완료{background:#dff6dd;color:#107c10;border-radius:10px;padding:2px 8px;font-size:.68rem;font-weight:600}
 .badge-반려{background:#fde7e9;color:#a4262c;border-radius:10px;padding:2px 8px;font-size:.68rem;font-weight:600}
@@ -296,6 +302,8 @@ html.standalone-detail.detail-ready #standalone-loader { display: none !importan
 // 결재 의견은 사용자가 직접 입력하는 자유 텍스트라 그대로 출력하면 저장형 XSS 가 된다.
 // SharePoint 다중 텍스트는 <div class="ExternalClass..."> 래퍼와 숫자 엔티티를 붙여 저장하므로
 // spText 로 걷어낸 뒤 escHtml 로 이스케이프한다. (mc 의 검증된 구현을 이식)
+// FA 유형 → 배지 색 클래스. 모르는 값이면 기본(파랑).
+function faTypeCls(t){ const k=String(t||'').toLowerCase(); return ['registration','disposal','transfer'].includes(k) ? 'badge-type-'+k : ''; }
 function escHtml(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -2104,7 +2112,7 @@ async function loadMyList() {
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '신청 내역이 없습니다.', 6); return; }
-    dynLoadEnd(); pgSet('list', mine, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td><span class="badge badge-type">' + (f.FAType||'') + '</span></td><td>' + (f.Title||'') + '</td><td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td><td style="text-align:center;vertical-align:middle;padding:6px 8px;">'+_wdBtn(item.id,'FA_Approvals','FA_Requests',f.Status)+'</td></tr>'; }, '신청 내역이 없습니다.', 5);
+    dynLoadEnd(); pgSet('list', mine, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + (f.FAType||'') + '</span></td><td>' + (f.Title||'') + '</td><td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td><td style="text-align:center;vertical-align:middle;padding:6px 8px;">'+_wdBtn(item.id,'FA_Approvals','FA_Requests',f.Status)+'</td></tr>'; }, '신청 내역이 없습니다.', 5);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
@@ -2139,7 +2147,7 @@ async function loadApprovalQueue() {
     const rows = mine.map(function(item) {
       const f = item.fields;
       const rf = reqMap[String(f.RequestID)] || {};
-      return '<tr onclick="showDetail(' + f.RequestID + ')" style="cursor:pointer"><td style="color:#0078d4">' + f.RequestID + '</td><td>' + (rf.RequesterEmail||'') + '</td><td><span class="badge badge-type">' + (rf.FAType||'') + '</span></td><td>' + (rf.Title||'') + '</td><td><span class="badge badge-' + (rf.Status||'대기') + '">' + (rf.Status||'') + '</span></td><td>' + (rf.RequestDate ? fmtDate(rf.RequestDate) : '') + '</td><td onclick="event.stopPropagation()"><button class="btn-approve" onclick="showConfirm(' + item.id + ',\'승인\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">승인</button> <button class="btn-reject" onclick="showConfirm(' + item.id + ',\'반려\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">반려</button></td></tr>';
+      return '<tr onclick="showDetail(' + f.RequestID + ')" style="cursor:pointer"><td style="color:#0078d4">' + f.RequestID + '</td><td>' + (rf.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(rf.FAType) + '">' + (rf.FAType||'') + '</span></td><td>' + (rf.Title||'') + '</td><td><span class="badge badge-' + (rf.Status||'대기') + '">' + (rf.Status||'') + '</span></td><td>' + (rf.RequestDate ? fmtDate(rf.RequestDate) : '') + '</td><td onclick="event.stopPropagation()"><button class="btn-approve" onclick="showConfirm(' + item.id + ',\'승인\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">승인</button> <button class="btn-reject" onclick="showConfirm(' + item.id + ',\'반려\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">반려</button></td></tr>';
     });
     dynLoadEnd(); pgSet('appr', rows, function(r){ return r; }, '결재 대기 항목이 없습니다.', 7);
   } catch(e) { dynLoadEnd(); console.error('loadApprovalQueue error:', e); }
@@ -2389,7 +2397,7 @@ async function showDetail(requestId) {
     let html = sec('기본 정보') +
       row('제목', f.Title) +
       row('신청자', f.RequesterEmail) +
-      row('FA 유형', '<span style="background:#e8f4ff;color:#0078d4;padding:2px 8px;border-radius:10px;font-size:12px">' + (f.FAType||'') + '</span>') +
+      row('FA 유형', '<span class="badge badge-type ' + faTypeCls(f.FAType) + '" style="font-size:.75rem">' + (f.FAType||'') + '</span>') +
       row('상태', '<span class="badge-' + (function(s){var v=(s||'대기').trim();return v.indexOf('철회')===0?'철회':(v==='승인'?'승인완료':v);})(f.Status) + '">' + (f.Status||'대기') + '</span>') +
       row('신청일', f.RequestDate ? fmtDate(f.RequestDate) : '') +
       (f.FACode ? row('FA Code', '<strong style="color:#107c10">' + f.FACode + '</strong>') : '');
@@ -2683,7 +2691,7 @@ async function loadAdminList() {
     if (filterType) items = items.filter(i => i.fields.FAType === filterType);
     if (filterSearch) items = items.filter(i => (i.fields.RequesterEmail||'').toLowerCase().includes(filterSearch));
     document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
-    dynLoadEnd(); pgSet('admin', items, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td style="color:#0078d4;font-weight:600">' + (idx+1) + '</td><td class="c-mail" title="' + escHtml(f.RequesterEmail||'') + '">' + escHtml(f.RequesterEmail||'') + '</td><td><span class="badge badge-type">' + (f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td><td class="c-code" title="' + escHtml(f.FACode||'') + '">' + (f.FACode ? '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>' : '<span style="color:#a19f9d">-</span>') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'') + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '조회 결과가 없습니다.', 7);
+    dynLoadEnd(); pgSet('admin', items, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td style="color:#0078d4;font-weight:600">' + (idx+1) + '</td><td class="c-mail" title="' + escHtml(f.RequesterEmail||'') + '">' + escHtml(f.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + (f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td><td class="c-code" title="' + escHtml(f.FACode||'') + '">' + (f.FACode ? '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>' : '<span style="color:#a19f9d">-</span>') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'') + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '조회 결과가 없습니다.', 7);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
