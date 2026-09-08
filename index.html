@@ -993,7 +993,7 @@ if (new URLSearchParams(location.search).get('openId')) {
       </div>
       <table class="list-table">
         <thead><tr>
-          <th>번호</th><th>신청자</th><th>유형</th><th>제목</th><th>FA Code</th><th>상태</th><th>신청일</th>
+          <th style="width:40px">번호</th><th style="width:150px">신청자</th><th style="width:96px">유형</th><th>제목</th><th style="width:130px">FA Code</th><th style="width:70px">상태</th><th style="width:116px">신청일</th>
         </tr></thead>
         <tbody id="admin-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
       </table>
@@ -2683,7 +2683,7 @@ async function loadAdminList() {
     if (filterType) items = items.filter(i => i.fields.FAType === filterType);
     if (filterSearch) items = items.filter(i => (i.fields.RequesterEmail||'').toLowerCase().includes(filterSearch));
     document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
-    dynLoadEnd(); pgSet('admin', items, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td style="color:#0078d4;font-weight:600">' + (idx+1) + '</td><td style="font-size:.78rem">' + (f.RequesterEmail||'') + '</td><td><span class="badge badge-type">' + (f.FAType||'') + '</span></td><td style="font-size:.78rem">' + (f.Title||'') + '</td><td style="font-size:.78rem;white-space:nowrap">' + (f.FACode ? '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>' : '<span style="color:#a19f9d">-</span>') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'') + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '조회 결과가 없습니다.', 7);
+    dynLoadEnd(); pgSet('admin', items, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td style="color:#0078d4;font-weight:600">' + (idx+1) + '</td><td class="c-mail" title="' + escHtml(f.RequesterEmail||'') + '">' + escHtml(f.RequesterEmail||'') + '</td><td><span class="badge badge-type">' + (f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td><td class="c-code" title="' + escHtml(f.FACode||'') + '">' + (f.FACode ? '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>' : '<span style="color:#a19f9d">-</span>') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'') + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '조회 결과가 없습니다.', 7);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
@@ -3403,6 +3403,16 @@ function _wdBtn(itemId, aprList, reqList, status) {
 .modal-row{font-size:.82rem}
 .modal-label{font-size:.75rem}
 .hint,.file-area .hint,.notice,.file-item{font-size:.75rem}
+/* ── 관리자 표를 카드 안에 가둔다 (GW·IT 와 같은 방식, 09-08) ──
+   td 가 nowrap 이라 내용대로 늘어나 카드(#app 900px) 밖으로 삐져나갔다. table-layout 을 고정하면
+   폭은 머리글이 정하고, 넘치는 내용은 말줄임(…)으로 접는다. 전체 내용은 마우스를 올리면 title 로 보인다. */
+#tab-admin .list-table{table-layout:fixed;width:100%}
+#tab-admin .list-table th,#tab-admin .list-table td{padding-left:6px;padding-right:6px}
+#tab-admin .list-table th{white-space:normal}
+#tab-admin .list-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tab-admin .list-table td.c-mail{font-size:.7rem;color:#605e5c}
+#tab-admin .list-table td.c-code{font-size:.74rem}
+#tab-admin .list-table td.c-code strong{white-space:nowrap}
 /* 배지는 inline-block 이라 자기 높이로 행을 밀어 올린다. 줄높이를 함께 낮춘다. */
 .list-table td .badge,
 .list-table td [class^="badge-"],
