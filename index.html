@@ -993,7 +993,7 @@ if (new URLSearchParams(location.search).get('openId')) {
       </div>
       <table class="list-table">
         <thead><tr>
-          <th style="width:40px">번호</th><th style="width:150px">신청자</th><th style="width:96px">유형</th><th>제목</th><th style="width:130px">FA Code</th><th style="width:70px">상태</th><th style="width:116px">신청일</th>
+          <th style="width:36px">번호</th><th style="width:186px">신청자</th><th style="width:92px">유형</th><th style="width:172px">제목</th><th>FA Code</th><th style="width:66px">상태</th><th style="width:112px">신청일</th>
         </tr></thead>
         <tbody id="admin-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
       </table>
@@ -3411,6 +3411,8 @@ function _wdBtn(itemId, aprList, reqList, status) {
 #tab-admin .list-table th{white-space:normal}
 #tab-admin .list-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #tab-admin .list-table td.c-mail{font-size:.7rem;color:#605e5c}
+/* 폭 배분: 신청자는 이메일이 다 들어가게(186), 제목은 항상 같은 길이라 고정(172), 남는 폭은 FA Code 가 받는다 —
+   제목 뒤에 빈 공간이 남지 않고, 메모가 붙은 긴 코드가 잘리는 폭도 넓어진다. */
 #tab-admin .list-table td.c-code{font-size:.74rem}
 #tab-admin .list-table td.c-code strong{white-space:nowrap}
 /* 배지는 inline-block 이라 자기 높이로 행을 밀어 올린다. 줄높이를 함께 낮춘다. */
