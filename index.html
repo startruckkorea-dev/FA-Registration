@@ -3429,6 +3429,13 @@ function _wdBtn(itemId, aprList, reqList, status) {
 .list-table{font-size:.82rem}
 #tab-admin .list-table,#tab-approval .list-table,#tab-list .list-table{font-size:.74rem}
 #tab-admin .list-table th,#tab-approval .list-table th,#tab-list .list-table th{font-size:.68rem;line-height:16px}
+/* 좁은 화면(휴대폰·창 축소): 표가 카드 밖으로 삐져나오지 않게 — GW·IT 와 같은 방식(09-10).
+   표는 최소 폭을 지키고, 카드 안에서 가로 스크롤한다. 글자가 카드 밖 회색 배경으로 나가지 않는다. */
+#tab-admin .card,#tab-approval .card,#tab-list .card{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#tab-admin .list-table,#tab-approval .list-table,#tab-list .list-table{min-width:820px}
+@media (max-width:640px){
+  #tab-admin .card,#tab-approval .card,#tab-list .card{padding:16px 12px}
+}
 .badge{font-size:.68rem;font-weight:600}
 .modal-title{font-size:1rem;font-weight:700;padding-bottom:10px;border-bottom:1px solid #edebe9}
 .modal-close{font-size:1.2rem}
