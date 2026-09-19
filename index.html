@@ -3680,7 +3680,9 @@ function _wdBtn(itemId, aprList, reqList, status) {
    결재자 사이가 다른 시스템(acc-others·BP·IT, 12px/6px/0)보다 눈에 띄게 벌어져 있었다.
    선택 상자도 .form-group 바깥이라 브라우저 기본 스타일로 각지게 그려졌다. */
 .appr-block { padding: 12px; margin-bottom: 10px; }
-.appr-block .appr-title { margin-bottom: 6px; }
+.appr-block .appr-title { margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+/* 결재자 제목 앞 파란 점 — IT Ticket 과 같은 표시(8px 원). 자동 지정 결재자도 같게 둔다. */
+.appr-block .appr-title::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0078d4; flex-shrink: 0; }
 .appr-grid { grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 0; }
 .appr-grid select {
   width: 100%; box-sizing: border-box;
