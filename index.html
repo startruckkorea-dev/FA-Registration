@@ -3674,6 +3674,21 @@ function _wdBtn(itemId, aprList, reqList, status) {
 }
 
 
+
+/* ── 결재자 지정 블록 — APS 공통 간격 (09-19)
+   FA 는 .appr-block 여백 14px · .appr-title 아래 10px · .form-row 아래 12px 라
+   결재자 사이가 다른 시스템(acc-others·BP·IT, 12px/6px/0)보다 눈에 띄게 벌어져 있었다.
+   선택 상자도 .form-group 바깥이라 브라우저 기본 스타일로 각지게 그려졌다. */
+.appr-block { padding: 12px; margin-bottom: 8px; }
+.appr-block .appr-title { margin-bottom: 6px; }
+.appr-grid { gap: 6px; margin-bottom: 0; }
+.appr-grid select {
+  width: 100%; box-sizing: border-box;
+  border: 1px solid #d2d0ce; border-radius: 4px; padding: 6px 10px;
+  font-size: 13px; font-family: inherit; color: #323130; background: #fff; }
+.appr-grid select:disabled { background: #f3f2f1; color: #a19f9d; }
+.appr-grid select:focus { outline: none; border-color: #0078d4; }
+.appr-block .form-row { gap: 6px; margin-bottom: 0; margin-top: 6px !important; }
 </style>
 
 <!-- FA Code 입력 모달 -->
