@@ -2235,8 +2235,8 @@ function applyFlexApprovers(){
    이동 후 부서는 3차(이동 후 Line Manager · 팀장)만 직접 고르고, 4차(이동 후 Department Head · 부서장)는 그 3차의 G열(Boss)을
    employee_search 에서 찾아 자동으로 채운다 — 1·2차가 신청자의 G · H 열로 정해지는 것과 같은 명부 · 같은 이름 찾기(flexByName).
    · 3차가 비어 있으면 4차도 비어 있다(예전처럼 이동 후 결재자 없이 상신 가능 — 3·4차 모두 빠진다).
-   · 3차의 Boss 가 비었거나 '-' 이거나 명부에서 못 찾거나 3차 본인이면, 4차는 예전처럼 직접 선택(비워 두면 4차 없이 상신)으로 열고 안내 +
-     Logging_data 「결재자 Flex 연동 실패」(같은 3차는 한 번만).
+   · 3차의 Boss 가 비었거나 '-' 이거나 명부에서 못 찾거나 3차 본인이면, 4차는 직접 선택으로 열고 안내 +
+     Logging_data 「결재자 Flex 연동 실패」(같은 3차는 한 번만). 3차가 있으면 4차도 있어야 상신된다(10-02 — 4차 없이 상신 막음).
    · 같은 사람이 2차와 4차에 오는 것(같은 부서 안 이동)은 1·2차 규칙(09-19)과 같이 허용한다. */
 function tfrSyncA4(){
   const nameEl=document.getElementById('tfr-a4-name'), emailEl=document.getElementById('tfr-a4-email'); if(!nameEl||!emailEl) return;
@@ -2270,10 +2270,10 @@ function tfrSyncA4(){
   const bossTxt = p3 ? (p3.boss||'(빈칸)') : '';
   const top = p3 && String(p3.boss||'').trim()==='-';   // 명부에 상사가 '-'(대표 등) — 명부 오류가 아니므로 이력은 남기지 않는다
   note.textContent = !p3
-    ? '⚠ 3차 결재자 「'+a3name+'」 을(를) Flex 명부(employee_search)에서 찾지 못해 4차는 직접 선택합니다(비워 두면 4차 없이 상신) — IT팀(stk_it@hyosung.com)에 알려주세요.'
+    ? '⚠ 3차 결재자 「'+a3name+'」 을(를) Flex 명부(employee_search)에서 찾지 못해 4차는 직접 선택합니다 — IT팀(stk_it@hyosung.com)에 알려주세요.'
     : top
-    ? 'ℹ 3차 결재자 「'+a3name+'」 은(는) Flex 명부에 상사(Boss)가 없어 4차를 자동으로 정할 수 없습니다 — 필요하면 직접 고르고, 비워 두면 4차 없이 상신됩니다.'
-    : '⚠ 3차 결재자 「'+a3name+'」 의 Boss 「'+bossTxt+'」 을(를) Flex 명부에서 찾지 못해 4차는 직접 선택합니다(비워 두면 4차 없이 상신) — IT팀(stk_it@hyosung.com)에 알려주세요.';
+    ? 'ℹ 3차 결재자 「'+a3name+'」 은(는) Flex 명부에 상사(Boss)가 없어 4차를 자동으로 정할 수 없습니다.'
+    : '⚠ 3차 결재자 「'+a3name+'」 의 Boss 「'+bossTxt+'」 을(를) Flex 명부에서 찾지 못해 4차는 직접 선택합니다 — IT팀(stk_it@hyosung.com)에 알려주세요.';
   tfrSyncA4._logged = tfrSyncA4._logged || {};
   if(!top && !tfrSyncA4._logged[a3email]){
     tfrSyncA4._logged[a3email]=true;
@@ -2301,6 +2301,11 @@ async function submitRequest(faType) {
   }
   if (!document.getElementById(prefix + '-a1-email').value) return alert('1차 결재자를 지정해주세요.');
   if (!document.getElementById(prefix + '-a2-email').value) return alert('2차 결재자를 지정해주세요.');
+  // Transfer: 3차(이동 후 팀장)를 골랐으면 4차(이동 후 부서장)도 있어야 한다 — 4차를 자동으로 못 정해 직접 선택이 열린 경우(10-02)
+  if (faType === 'Transfer' && document.getElementById('tfr-a3-email').value && !document.getElementById('tfr-a4-email').value) {
+    const b4 = document.getElementById('tfr-a4-block'); if (b4) b4.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    return alert('4차 결재자(이동 후 부서 Department Head)를 지정해주세요.');
+  }
   // 자동 지정 결재자(회계담당자 · 회계팀장 · 최종결재자)는 설정 파일에서 온다 — 하나라도 비면 주인 없는 결재행이 생겨 건이 멈추므로 상신을 막는다(09-30)
   const _autoMissing = [['회계담당자(FA_ACCOUNTANT)', FA_ACCOUNTANT], ['회계팀장(FA_ACCHEAD)', FA_ACCHEAD], ['최종결재자(FA_CFO)', FA_CFO]].filter(x => !(x[1].email || '').trim()).map(x => x[0]);
   if (_autoMissing.length) return alert('자동 지정 결재자 설정을 읽지 못했습니다: ' + _autoMissing.join(', ') + '\n\n새로고침 후 다시 시도해 주세요. 계속되면 system_config_final.xlsx 의 해당 KEY 를 확인하거나 IT팀(stk_it@hyosung.com)에 알려 주세요.');
