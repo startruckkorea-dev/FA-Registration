@@ -1025,7 +1025,7 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       <div id="tfr-asset-rows"></div>
 
       <div class="section-title">3. 결재자 지정</div>
-      <div style="font-size:11px;color:#605e5c;margin-bottom:8px">※ 이동 전 부서 결재자(1·2차)는 Flex 조직도로 자동 지정됩니다. 이동 후 부서 결재자(3·4차)만 직접 지정해주세요.</div>
+      <div style="font-size:11px;color:#605e5c;margin-bottom:8px">※ 이동 전 부서 결재자(1·2차)는 Flex 조직도로 자동 지정됩니다. 이동 후 부서는 3차(팀장)만 고르면 4차(부서장)는 3차 결재자의 Boss 로 자동 지정됩니다.</div>
       <!-- 결재 라인 미리보기 · 결재자 블록 — ACC Voucher 와 같은 모양(09-30) -->
       <div class="appr-line-preview">
         <div class="appr-line-title">📋 결재 라인 (Transfer 기준 자동 구성)</div>
@@ -1069,15 +1069,15 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
           <input type="email" id="tfr-a3-email" readonly placeholder="이메일">
         </div>
       </div>
-      <div class="appr-block">
-        <div class="appr-block-title">4차 결재자 <span class="appr-tag manual">직접 선택</span> <span class="hint">— 이동 후 부서 Department Head (부서장)</span></div>
-        <div class="appr-select-row">
+      <div class="appr-block appr-fixed appr-flex" id="tfr-a4-block">
+        <div class="appr-block-title">4차 결재자 <span class="appr-tag flex">Flex 연동</span> <span class="hint">— 이동 후 부서 Department Head (부서장) · 3차 결재자의 Boss</span></div>
+        <div class="appr-select-row" style="display:none">
           <select id="tfr-a4-dept" onchange="onDeptChange(4,'tfr')"><option value="">부서</option></select>
           <select id="tfr-a4-team" onchange="onTeamChange(4,'tfr')" disabled><option value="">팀</option></select>
           <select id="tfr-a4-person" onchange="onPersonChange(4,'tfr')" disabled><option value="">직원 선택</option></select>
         </div>
         <div class="appr-info">
-          <input type="text" id="tfr-a4-name" readonly placeholder="이름">
+          <input type="text" id="tfr-a4-name" readonly placeholder="3차 결재자를 고르면 자동으로 채워집니다">
           <input type="email" id="tfr-a4-email" readonly placeholder="이메일">
         </div>
       </div>
@@ -1638,7 +1638,8 @@ async function boot(account) {
   await loadCCTRMaster();
   renderCCTROptions();
   initAllForms();
-  applyFlexApprovers();   // 1차 Line Manager · 2차 Department Head — Flex 연동(10-01). 이동 후 부서(3·4차)는 직접 선택 그대로
+  applyFlexApprovers();   // 1차 Line Manager · 2차 Department Head — Flex 연동(10-01)
+  tfrSyncA4();            // 이동 후 부서: 3차는 직접 선택, 4차는 3차의 Boss(10-02)
   initAssetRows();
   await checkApprover();
 
@@ -1763,6 +1764,7 @@ function initAllForms() {
 }
 
 function onDeptChange(idx, prefix) {
+  if (prefix === 'tfr' && idx === 3) setTimeout(tfrSyncA4, 0);   // 3차를 지우면(부서 바꿈) 4차도 비운다(10-02)
   const dept = document.getElementById(prefix + '-a' + idx + '-dept').value;
   const teamSel = document.getElementById(prefix + '-a' + idx + '-team');
   const personSel = document.getElementById(prefix + '-a' + idx + '-person');
@@ -1775,6 +1777,7 @@ function onDeptChange(idx, prefix) {
   personSel.disabled = true;
 }
 function onTeamChange(idx, prefix) {
+  if (prefix === 'tfr' && idx === 3) setTimeout(tfrSyncA4, 0);
   const dept = document.getElementById(prefix + '-a' + idx + '-dept').value;
   const team = document.getElementById(prefix + '-a' + idx + '-team').value;
   const personSel = document.getElementById(prefix + '-a' + idx + '-person');
@@ -1789,6 +1792,7 @@ function onPersonChange(idx, prefix) {
   const person = employeeData.find(e => e.email === email);
   document.getElementById(prefix + '-a' + idx + '-name').value = person ? person.name : '';
   document.getElementById(prefix + '-a' + idx + '-email').value = person ? person.email : '';
+  if (prefix === 'tfr' && idx === 3) tfrSyncA4();   // 4차 = 3차 결재자의 Boss(10-02)
 }
 
 // ── GL AUTO-MAPPING ──
@@ -2227,6 +2231,56 @@ function applyFlexApprovers(){
   }
 }
 
+/* ══ Transfer 4차 = 3차 결재자의 Boss (10-02) ══
+   이동 후 부서는 3차(이동 후 Line Manager · 팀장)만 직접 고르고, 4차(이동 후 Department Head · 부서장)는 그 3차의 G열(Boss)을
+   employee_search 에서 찾아 자동으로 채운다 — 1·2차가 신청자의 G · H 열로 정해지는 것과 같은 명부 · 같은 이름 찾기(flexByName).
+   · 3차가 비어 있으면 4차도 비어 있다(예전처럼 이동 후 결재자 없이 상신 가능 — 3·4차 모두 빠진다).
+   · 3차의 Boss 가 비었거나 '-' 이거나 명부에서 못 찾거나 3차 본인이면, 4차는 예전처럼 직접 선택(비워 두면 4차 없이 상신)으로 열고 안내 +
+     Logging_data 「결재자 Flex 연동 실패」(같은 3차는 한 번만).
+   · 같은 사람이 2차와 4차에 오는 것(같은 부서 안 이동)은 1·2차 규칙(09-19)과 같이 허용한다. */
+function tfrSyncA4(){
+  const nameEl=document.getElementById('tfr-a4-name'), emailEl=document.getElementById('tfr-a4-email'); if(!nameEl||!emailEl) return;
+  const block=nameEl.closest('.appr-block'), title=block.querySelector('.appr-block-title'), tag=title&&title.querySelector('.appr-tag'), row=block.querySelector('.appr-select-row');
+  const a3name=(document.getElementById('tfr-a3-name')||{}).value||'', a3email=(document.getElementById('tfr-a3-email')||{}).value||'';
+  const p3 = a3email ? flexEmp().find(e=>flexNorm(e.email)===flexNorm(a3email)) : null;
+  const boss = p3 ? flexByName(p3.boss) : null;
+  let note=block.querySelector('.flex-note');
+  const fixed=(ph)=>{
+    if(row) row.style.display='none';
+    block.classList.add('appr-fixed','appr-flex');
+    if(tag){ tag.className='appr-tag flex'; tag.textContent='Flex 연동'; }
+    nameEl.readOnly=true; emailEl.readOnly=true; nameEl.placeholder=ph; emailEl.placeholder='이메일';
+    if(note) note.remove();
+  };
+  if(!a3email){ nameEl.value=''; emailEl.value=''; fixed('3차 결재자를 고르면 자동으로 채워집니다'); tfrSyncA4._mode='wait'; return; }
+  if(boss && flexNorm(boss.email)!==flexNorm(a3email)){
+    nameEl.value=boss.name; emailEl.value=boss.email; fixed('이름'); tfrSyncA4._mode='auto'; return;
+  }
+  // 못 찾음 → 직접 선택(선택 사항). 자동으로 채웠던 값은 지우고 고르는 칸을 처음 상태로.
+  if(tfrSyncA4._mode!=='manual' || tfrSyncA4._for!==a3email){
+    const d=document.getElementById('tfr-a4-dept'); if(d){ d.value=''; onDeptChange(4,'tfr'); }
+    nameEl.value=''; emailEl.value='';
+  }
+  tfrSyncA4._mode='manual'; tfrSyncA4._for=a3email;
+  if(row) row.style.display='';
+  block.classList.remove('appr-fixed','appr-flex');
+  if(tag){ tag.className='appr-tag manual'; tag.textContent='직접 선택'; }
+  nameEl.placeholder='이름'; emailEl.placeholder='이메일';
+  if(!note){ note=document.createElement('div'); note.className='flex-note'; title ? title.insertAdjacentElement('afterend', note) : block.insertBefore(note, block.firstChild); }
+  const bossTxt = p3 ? (p3.boss||'(빈칸)') : '';
+  const top = p3 && String(p3.boss||'').trim()==='-';   // 명부에 상사가 '-'(대표 등) — 명부 오류가 아니므로 이력은 남기지 않는다
+  note.textContent = !p3
+    ? '⚠ 3차 결재자 「'+a3name+'」 을(를) Flex 명부(employee_search)에서 찾지 못해 4차는 직접 선택합니다(비워 두면 4차 없이 상신) — IT팀(stk_it@hyosung.com)에 알려주세요.'
+    : top
+    ? 'ℹ 3차 결재자 「'+a3name+'」 은(는) Flex 명부에 상사(Boss)가 없어 4차를 자동으로 정할 수 없습니다 — 필요하면 직접 고르고, 비워 두면 4차 없이 상신됩니다.'
+    : '⚠ 3차 결재자 「'+a3name+'」 의 Boss 「'+bossTxt+'」 을(를) Flex 명부에서 찾지 못해 4차는 직접 선택합니다(비워 두면 4차 없이 상신) — IT팀(stk_it@hyosung.com)에 알려주세요.';
+  tfrSyncA4._logged = tfrSyncA4._logged || {};
+  if(!top && !tfrSyncA4._logged[a3email]){
+    tfrSyncA4._logged[a3email]=true;
+    try{ if(typeof logAction==='function') logAction(FLEX_SYS, '결재자 Flex 연동 실패', { user:((user&&(user.email||user.username))||''), reason: 'tfr-a4: 3차 '+a3email+' 의 '+(p3 ? 'Boss 못 찾음('+bossTxt+')' : '명부에 없음') }); }catch(e){}
+  }
+}
+
 async function submitRequest(faType) {
   const prefix = faType === 'Registration' ? 'reg' : faType === 'Disposal' ? 'dis' : 'tfr';
   const files = prefix === 'reg' ? regFiles : prefix === 'dis' ? disFiles : tfrFiles;
@@ -2494,6 +2548,7 @@ function resetTransferForm() {
   tfrFiles = []; renderFiles('tfr');
   initAssetRows();
   applyFlexApprovers();
+  tfrSyncA4();
 }
 
 // ── LISTS ──
