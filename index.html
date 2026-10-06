@@ -143,6 +143,23 @@ html.standalone-detail.detail-ready #standalone-loader { display: none !importan
 
 
 /* asset-row removed */
+/* Transfer 자산표(10-06) — 머리글 · 줄이 같은 칸 너비를 쓴다 */
+.tfr-sheet { --tfr-cols: 44px minmax(130px,1.5fr) minmax(170px,2.6fr) 84px minmax(130px,1.6fr); border:1px solid #e1dfdd; border-radius:8px; overflow:hidden; background:#fff; overflow-x:auto; }
+.tfr-head, .tfr-row { display:grid; grid-template-columns:var(--tfr-cols); column-gap:8px; align-items:center; padding:0 12px; min-width:560px; }
+.tfr-head { background:#f6f8fb; border-bottom:1px solid #e1dfdd; height:34px; font-size:11px; font-weight:600; color:#605e5c; letter-spacing:.02em; text-transform:none; }
+.tfr-row { padding-top:6px; padding-bottom:6px; border-bottom:1px solid #f3f2f1; transition:background .15s; }
+.tfr-row:last-child { border-bottom:none; }
+.tfr-row:hover { background:#fafbfd; }
+.tfr-row:focus-within { background:#f3f8fe; }
+.tfr-head .c-no, .tfr-row .c-no { text-align:center; }
+.tfr-head .c-qty { text-align:center; }
+.tfr-row .c-no b { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#eef2f7; color:#605e5c; font-size:11px; font-weight:600; }
+.tfr-row:focus-within .c-no b { background:#0078d4; color:#fff; }
+.tfr-row input { width:100%; box-sizing:border-box; height:32px; border:1px solid #d2d0ce; border-radius:6px; padding:0 10px; font-size:12px; font-family:inherit; color:#323130; background:#fff; transition:border-color .15s, box-shadow .15s; }
+.tfr-row input::placeholder { color:#a19f9d; }
+.tfr-row input:hover { border-color:#a19f9d; }
+.tfr-row input:focus { outline:none; border-color:#0078d4; box-shadow:0 0 0 3px rgba(0,120,212,.15); }
+.tfr-row input.c-qty { text-align:center; }
 
 .fa-table { width:100%; border-collapse:collapse; font-size:12px; }
 .fa-table th { background:#f3f2f1; padding:6px 8px; text-align:left; font-weight:600; color:#605e5c; border-bottom:2px solid #edebe9; white-space:nowrap; }
@@ -688,7 +705,7 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">필수첨부파일: 고정자산구입처, 운송업체 등 다수의 업체가 있는 경우 모든 세금계산서 및 인보이스를 첨부해주세요.</div>
       <div class="file-area" onclick="document.getElementById('reg-file-input').click()">
         <input type="file" id="reg-file-input" multiple onchange="onFileSelect(event,'reg')">
-        <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
+        <div class="hint">📎 클릭하여 파일 첨부 (최대 30MB)</div>
       </div>
       <div class="file-list" id="reg-file-list"></div>
       <div id="reg-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
@@ -897,7 +914,7 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">처분 및 매각할 자산의 사진이 첨부되었는지 다시 한번 확인해주세요.</div>
       <div class="file-area" onclick="document.getElementById('dis-file-input').click()">
         <input type="file" id="dis-file-input" multiple onchange="onFileSelect(event,'dis')">
-        <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
+        <div class="hint">📎 클릭하여 파일 첨부 (최대 30MB)</div>
       </div>
       <div class="file-list" id="dis-file-list"></div>
       <div id="dis-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
@@ -1019,10 +1036,12 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       </div>
 
       <div class="section-title">2. 이동할 자산 리스트 (List of Transfer Fixed Assets)</div>
-      <div style="display:grid;grid-template-columns:40px 2fr 3fr 1fr 2fr;gap:6px;font-size:11px;font-weight:600;color:#605e5c;margin-bottom:4px;padding:0 2px">
-        <span>No</span><span>Asset Code</span><span>Asset Description</span><span>Qty</span><span>Remark</span>
+      <!-- 10-06: 머리글과 입력 줄이 서로 다른 칸 너비(40px 2fr 3fr 1fr 2fr / 28px 1.5fr 2.5fr 80px 1.5fr)를 써서 열이 어긋났다 —
+           한 틀(.tfr-sheet · --tfr-cols)을 같이 쓰게 하고 표 모양(테두리 · 머리 띠 · 줄 구분)으로 정리 -->
+      <div class="tfr-sheet">
+        <div class="tfr-head"><span class="c-no">No</span><span>Asset Code</span><span>Asset Description</span><span class="c-qty">Qty</span><span>Remark</span></div>
+        <div id="tfr-asset-rows"></div>
       </div>
-      <div id="tfr-asset-rows"></div>
 
       <div class="section-title">3. 결재자 지정</div>
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">※ 이동 전 부서 결재자(1·2차)는 Flex 조직도로 자동 지정됩니다. 이동 후 부서는 3차(팀장)만 고르면 4차(부서장)는 3차 결재자의 Boss 로 자동 지정됩니다.</div>
@@ -1110,7 +1129,7 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       <div style="font-size:11px;color:#605e5c;margin-bottom:8px">이동할 자산의 사진을 첨부해주세요.</div>
       <div class="file-area" onclick="document.getElementById('tfr-file-input').click()">
         <input type="file" id="tfr-file-input" multiple onchange="onFileSelect(event,'tfr')">
-        <div class="hint">📎 클릭하여 파일 첨부 (최대 10MB)</div>
+        <div class="hint">📎 클릭하여 파일 첨부 (최대 30MB)</div>
       </div>
       <div class="file-list" id="tfr-file-list"></div>
       <div id="tfr-file-notice" class="notice error" style="display:none">필수 첨부파일을 첨부해주세요.</div>
@@ -1899,13 +1918,13 @@ function initAssetRows() {
   tfrContainer.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
     const trow = document.createElement('div');
-    trow.style.cssText = 'display:grid;grid-template-columns:28px 1.5fr 2.5fr 80px 1.5fr;gap:4px;margin-bottom:4px;align-items:center';
+    trow.className = 'tfr-row';   // 상신은 #tfr-asset-rows div 의 input 4개(code · desc · qty · remark) 순서로 읽는다 — 줄 안에 div 를 넣지 말 것
     trow.innerHTML =
-      '<span style="font-size:12px;color:#605e5c;text-align:center;padding-top:6px">' + i + '</span>' +
-      '<input type="text" placeholder="xxxxxxxx (8자리)" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-      '<input type="text" placeholder="자산 설명" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-      '<input type="number" placeholder="수량" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">' +
-      '<input type="text" placeholder="비고" style="border:1px solid #d2d0ce;border-radius:4px;padding:5px 7px;font-size:12px">';
+      '<span class="c-no"><b>' + i + '</b></span>' +
+      '<input type="text" placeholder="xxxxxxxx (8자리)" aria-label="Asset Code ' + i + '">' +
+      '<input type="text" placeholder="자산 설명" aria-label="Asset Description ' + i + '">' +
+      '<input type="number" min="1" step="1" placeholder="수량" class="c-qty" aria-label="Qty ' + i + '">' +
+      '<input type="text" placeholder="비고" aria-label="Remark ' + i + '">';
     tfrContainer.appendChild(trow);
   }
 }
@@ -2115,12 +2134,19 @@ function calcNBV(input) {
 
 
 // ── FILES ──
+/* 첨부 한도(10-06): 한 건의 첨부 합계 30MB(예전 10MB). 업로드는 Graph 단순 업로드(PUT …/content)로 파일당 250MB 까지 되므로 방식은 그대로 둔다.
+   한도를 넘으면 예전엔 이미 담아 둔 첨부까지 모두 비웠다 — 이제 방금 고른 파일만 빼고 알린다. */
+const ATTACH_MAX_MB = 30;
 function onFileSelect(e, prefix) {
   const store = prefix === 'reg' ? regFiles : prefix === 'dis' ? disFiles : tfrFiles;
-  const newFiles = Array.from(e.target.files);
-  for (const f of newFiles) { if (!store.find(x => x.name === f.name)) store.push(f); }
+  const newFiles = Array.from(e.target.files), added = [];
+  for (const f of newFiles) { if (!store.find(x => x.name === f.name)) { store.push(f); added.push(f); } }
   const totalMB = store.reduce((s,f) => s + f.size, 0) / 1024 / 1024;
-  if (totalMB > 10) { alert('첨부파일 총 용량이 ' + totalMB.toFixed(1) + 'MB입니다. 10MB 이하로 첨부해주세요.'); store.length = 0; }
+  if (totalMB > ATTACH_MAX_MB) {
+    added.forEach(f => { const i = store.indexOf(f); if (i >= 0) store.splice(i, 1); });
+    const keptMB = store.reduce((s,f) => s + f.size, 0) / 1024 / 1024;
+    alert('첨부파일 총 용량이 ' + totalMB.toFixed(1) + 'MB가 되어 방금 고른 파일은 넣지 않았습니다. 합계 ' + ATTACH_MAX_MB + 'MB 이하로 첨부해주세요. (지금 ' + keptMB.toFixed(1) + 'MB)');
+  }
   renderFiles(prefix);
   document.getElementById(prefix + '-file-input').value = '';
 }
@@ -2133,7 +2159,7 @@ function renderFiles(prefix) {
   const totalMB = store.reduce((s,f) => s + f.size, 0) / 1024 / 1024;
   document.getElementById(prefix + '-file-list').innerHTML = store.map((f,i) =>
     '<div class="file-item"><span>' + f.name + ' <span style="color:#605e5c">(' + (f.size/1024).toFixed(1) + ' KB)</span></span><button onclick="removeFile(\'' + prefix + '\',' + i + ')">×</button></div>'
-  ).join('') + (store.length ? '<div style="font-size:11px;color:#605e5c;text-align:right;margin-top:4px">총 ' + totalMB.toFixed(1) + ' MB / 10 MB</div>' : '');
+  ).join('') + (store.length ? '<div style="font-size:11px;color:#605e5c;text-align:right;margin-top:4px">총 ' + totalMB.toFixed(1) + ' MB / ' + ATTACH_MAX_MB + ' MB</div>' : '');
 }
 
 // ── TABS ──
