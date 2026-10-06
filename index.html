@@ -143,23 +143,6 @@ html.standalone-detail.detail-ready #standalone-loader { display: none !importan
 
 
 /* asset-row removed */
-/* Transfer 자산표(10-06) — 머리글 · 줄이 같은 칸 너비를 쓴다 */
-.tfr-sheet { --tfr-cols: 44px minmax(130px,1.5fr) minmax(170px,2.6fr) 84px minmax(130px,1.6fr); border:1px solid #e1dfdd; border-radius:8px; overflow:hidden; background:#fff; overflow-x:auto; }
-.tfr-head, .tfr-row { display:grid; grid-template-columns:var(--tfr-cols); column-gap:8px; align-items:center; padding:0 12px; min-width:560px; }
-.tfr-head { background:#f6f8fb; border-bottom:1px solid #e1dfdd; height:34px; font-size:11px; font-weight:600; color:#605e5c; letter-spacing:.02em; text-transform:none; }
-.tfr-row { padding-top:6px; padding-bottom:6px; border-bottom:1px solid #f3f2f1; transition:background .15s; }
-.tfr-row:last-child { border-bottom:none; }
-.tfr-row:hover { background:#fafbfd; }
-.tfr-row:focus-within { background:#f3f8fe; }
-.tfr-head .c-no, .tfr-row .c-no { text-align:center; }
-.tfr-head .c-qty { text-align:center; }
-.tfr-row .c-no b { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#eef2f7; color:#605e5c; font-size:11px; font-weight:600; }
-.tfr-row:focus-within .c-no b { background:#0078d4; color:#fff; }
-.tfr-row input { width:100%; box-sizing:border-box; height:32px; border:1px solid #d2d0ce; border-radius:6px; padding:0 10px; font-size:12px; font-family:inherit; color:#323130; background:#fff; transition:border-color .15s, box-shadow .15s; }
-.tfr-row input::placeholder { color:#a19f9d; }
-.tfr-row input:hover { border-color:#a19f9d; }
-.tfr-row input:focus { outline:none; border-color:#0078d4; box-shadow:0 0 0 3px rgba(0,120,212,.15); }
-.tfr-row input.c-qty { text-align:center; }
 
 .fa-table { width:100%; border-collapse:collapse; font-size:12px; }
 .fa-table th { background:#f3f2f1; padding:6px 8px; text-align:left; font-weight:600; color:#605e5c; border-bottom:2px solid #edebe9; white-space:nowrap; }
@@ -1036,11 +1019,18 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       </div>
 
       <div class="section-title">2. 이동할 자산 리스트 (List of Transfer Fixed Assets)</div>
-      <!-- 10-06: 머리글과 입력 줄이 서로 다른 칸 너비(40px 2fr 3fr 1fr 2fr / 28px 1.5fr 2.5fr 80px 1.5fr)를 써서 열이 어긋났다 —
-           한 틀(.tfr-sheet · --tfr-cols)을 같이 쓰게 하고 표 모양(테두리 · 머리 띠 · 줄 구분)으로 정리 -->
-      <div class="tfr-sheet">
-        <div class="tfr-head"><span class="c-no">No</span><span>Asset Code</span><span>Asset Description</span><span class="c-qty">Qty</span><span>Remark</span></div>
-        <div id="tfr-asset-rows"></div>
+      <!-- 10-06: 처분(Disposal) 자산표와 같은 표(fa-table) — 머리글 · 줄이 같은 열을 쓰고 모양 · 간격도 FA 다른 표와 통일 -->
+      <div style="overflow-x:auto">
+        <table class="fa-table">
+          <thead><tr>
+            <th style="width:32px">No</th>
+            <th style="min-width:130px">Asset Code</th>
+            <th style="min-width:200px">Asset Description</th>
+            <th style="width:90px">Qty</th>
+            <th style="min-width:150px">Remark</th>
+          </tr></thead>
+          <tbody id="tfr-asset-rows"></tbody>
+        </table>
       </div>
 
       <div class="section-title">3. 결재자 지정</div>
@@ -1917,14 +1907,13 @@ function initAssetRows() {
   const tfrContainer = document.getElementById('tfr-asset-rows');
   tfrContainer.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
-    const trow = document.createElement('div');
-    trow.className = 'tfr-row';   // 상신은 #tfr-asset-rows div 의 input 4개(code · desc · qty · remark) 순서로 읽는다 — 줄 안에 div 를 넣지 말 것
+    const trow = document.createElement('tr');   // 상신은 #tfr-asset-rows tr 의 input 4개(code · desc · qty · remark) 순서로 읽는다
     trow.innerHTML =
-      '<span class="c-no"><b>' + i + '</b></span>' +
-      '<input type="text" placeholder="xxxxxxxx (8자리)" aria-label="Asset Code ' + i + '">' +
-      '<input type="text" placeholder="자산 설명" aria-label="Asset Description ' + i + '">' +
-      '<input type="number" min="1" step="1" placeholder="수량" class="c-qty" aria-label="Qty ' + i + '">' +
-      '<input type="text" placeholder="비고" aria-label="Remark ' + i + '">';
+      '<td>' + i + '</td>' +
+      '<td><input type="text" placeholder="xxxxxxxx"></td>' +
+      '<td><input type="text" placeholder="자산 설명"></td>' +
+      '<td><input type="number" min="1" step="1" placeholder="수량" style="text-align:right"></td>' +
+      '<td><input type="text" placeholder="비고"></td>';
     tfrContainer.appendChild(trow);
   }
 }
@@ -2446,7 +2435,7 @@ async function submitRequest(faType) {
       title = 'FA-TFR-tmp';
       // Collect transfer asset rows
       const tfrAssetRows = [];
-      document.querySelectorAll('#tfr-asset-rows div').forEach((row, i) => {
+      document.querySelectorAll('#tfr-asset-rows tr').forEach((row, i) => {
         const inputs = row.querySelectorAll('input');
         if (inputs[0] && inputs[0].value.trim()) {
           tfrAssetRows.push({ code: inputs[0].value, desc: inputs[1].value, qty: inputs[2].value, remark: inputs[3].value });
