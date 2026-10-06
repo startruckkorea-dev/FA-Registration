@@ -2821,11 +2821,15 @@ async function showDetail(requestId) {
         ? '<div style="padding:7px 0;border-bottom:0.5px solid #edebe9;font-size:13px"><div style="font-size:11px;color:#605e5c;margin-bottom:3px">' + label + '</div><div style="white-space:pre-wrap;color:#323130">' + v + '</div></div>'
         : '<div class="modal-row"><div class="modal-label">' + label + '</div><div class="modal-value">' + v + '</div></div>';
     };
-    const tbl = (headers, rows_data) => {
-      let h = '<div style="overflow-x:auto;margin-top:6px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>' +
-        headers.map(h => '<th style="padding:5px 8px;background:#f3f2f1;text-align:left;border-bottom:2px solid #edebe9;white-space:nowrap">' + h + '</th>').join('') + '</tr></thead><tbody>';
-      rows_data.forEach(cols => {
-        h += '<tr>' + cols.map((c,i) => '<td style="padding:5px 8px;border-bottom:1px solid #f3f2f1;' + (i >= headers.length-3 ? 'text-align:right' : '') + '">' + (c||'-') + '</td>').join('') + '</tr>';
+    /* 10-06: 예전엔 「마지막 3열은 오른쪽 정렬」 로 고정이라(처분표의 금액 3열용) 이동표(Description · Qty · Remark)도 오른쪽으로 붙어
+       왼쪽 정렬 머리글과 어긋났다. 열마다 정렬 · 너비를 받는다(머리글도 같은 정렬). 칸 값은 사용자가 입력한 글이므로 escape 해서 넣는다. */
+    const tbl = (headers, rows_data, cols) => {
+      cols = cols || [];
+      const al = i => (cols[i] && cols[i].align) || 'left', wd = i => (cols[i] && cols[i].w) ? 'width:' + cols[i].w + ';' : '';
+      let h = '<div style="overflow-x:auto;margin-top:6px"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto"><thead><tr>' +
+        headers.map((t, i) => '<th style="padding:6px 8px;background:#f3f2f1;text-align:' + al(i) + ';border-bottom:2px solid #edebe9;white-space:nowrap;' + wd(i) + '">' + escHtml(t) + '</th>').join('') + '</tr></thead><tbody>';
+      rows_data.forEach(r => {
+        h += '<tr>' + r.map((c,i) => '<td style="padding:6px 8px;border-bottom:1px solid #f3f2f1;vertical-align:top;text-align:' + al(i) + ';' + (al(i) === 'left' ? 'word-break:break-word' : 'white-space:nowrap') + '">' + escHtml(c === undefined || c === null || c === '' ? '-' : String(c)) + '</td>').join('') + '</tr>';
       });
       return h + '</tbody></table></div>';
     };
@@ -2965,7 +2969,8 @@ async function showDetail(requestId) {
                 assets.map(a => [a.code, a.desc, a.date, a.cctr,
                   a.acqCost ? Number(String(a.acqCost).replace(/,/g,'')).toLocaleString() : '-',
                   a.accDepr ? Number(String(a.accDepr).replace(/,/g,'')).toLocaleString() : '-',
-                  a.nbv ? Number(String(a.nbv).replace(/,/g,'')).toLocaleString() : '-']));
+                  a.nbv ? Number(String(a.nbv).replace(/,/g,'')).toLocaleString() : '-']),
+                [{}, {}, { align: 'center' }, {}, { align: 'right' }, { align: 'right' }, { align: 'right' }]);
             // NBV 합계
             const nbvTotal = assets.reduce((sum, a) => sum + (parseFloat(String(a.nbv||'0').replace(/,/g,'')) || 0), 0);
             const nbvTotalStr = nbvTotal === 0 ? '-'
@@ -3006,7 +3011,8 @@ async function showDetail(requestId) {
                   c.cctr || '-',
                   c.currency || 'KRW',
                   c.rate ? Number(String(c.rate).replace(/,/g,'')).toLocaleString() : '1',
-                  c.amount ? Number(String(c.amount).replace(/,/g,'')).toLocaleString() : '-']));
+                  c.amount ? Number(String(c.amount).replace(/,/g,'')).toLocaleString() : '-']),
+                [{ align: 'center' }, {}, {}, {}, {}, { align: 'center' }, { align: 'right' }, { align: 'right' }]);
             // 합계 계산 및 일치 여부 표시
             const costTotal = costs.reduce((sum, c) => {
               const rate = parseFloat(String(c.rate  ||'1').replace(/[^0-9.]/g,'')) || 1;
@@ -3071,7 +3077,8 @@ async function showDetail(requestId) {
           if (assets.length) {
             html += sec('2. 이동할 자산 리스트') +
               tbl(['Asset Code','Description','Qty','Remark'],
-                assets.map(a => [a.code, a.desc, a.qty || '-', a.remark || '-']));
+                assets.map(a => [a.code, a.desc, a.qty || '-', a.remark || '-']),
+                [{ w: '110px' }, { w: '42%' }, { align: 'center', w: '56px' }, {}]);
           }
         } catch(e) {}
       }
