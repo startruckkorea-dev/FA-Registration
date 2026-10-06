@@ -1137,9 +1137,9 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       <div class="card-title">내 신청 목록</div>
       <table class="list-table">
         <thead><tr>
-          <th>번호</th><th>유형</th><th>제목</th><th>상태</th><th>신청일</th>
+          <th style="width:46px">번호</th><th style="width:100px">유형</th><th style="width:196px">제목</th><th>Purpose of Request</th><th style="width:78px">상태</th><th style="width:124px">신청일</th>
         <th style="width:90px;text-align:center;white-space:nowrap;">Withdraw</th></tr></thead>
-        <tbody id="list-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
+        <tbody id="list-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1150,9 +1150,9 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       <div class="card-title">결재 대기 목록</div>
       <table class="list-table">
         <thead><tr>
-          <th>신청번호</th><th>신청자</th><th>유형</th><th>제목</th><th>상태</th><th>신청일</th><th>처리</th>
+          <th style="width:64px">신청번호</th><th style="width:176px">신청자</th><th style="width:100px">유형</th><th style="width:196px">제목</th><th>Purpose of Request</th><th style="width:78px">상태</th><th style="width:124px">신청일</th><th style="width:118px">처리</th>
         </tr></thead>
-        <tbody id="appr-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
+        <tbody id="appr-body"><tr><td colspan="8" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1175,9 +1175,9 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
       </div>
       <table class="list-table">
         <thead><tr>
-          <th style="width:36px">번호</th><th style="width:174px">신청자</th><th style="width:92px">유형</th><th style="width:172px">제목</th><th>FA Code</th><th style="width:78px">상태</th><th style="width:112px">신청일</th>
+          <th style="width:36px">번호</th><th style="width:174px">신청자</th><th style="width:92px">유형</th><th style="width:172px">제목</th><th>Purpose of Request</th><th style="width:150px">FA Code</th><th style="width:78px">상태</th><th style="width:124px">신청일</th>
         </tr></thead>
-        <tbody id="admin-body"><tr><td colspan="7" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
+        <tbody id="admin-body"><tr><td colspan="8" style="text-align:center;padding:32px;color:#605e5c"><div class="dyn-dots" style="justify-content:center"><span></span><span></span><span></span></div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2177,6 +2177,10 @@ function switchTab(name) {
     logAction('FA Registration', '관리자 탭 열기', {});
   }
 
+  // 폭 조정(10-06) — 목록 세 탭은 열이 많아(Purpose of Request 추가) 900px 로는 좁다. 이 탭에서만 1280px(IT · GW · ACC 와 같은 폭)로 넓힌다.
+  // 신청 폼은 입력란이 지나치게 늘어나므로 900px 그대로. 권한 검사를 통과한 뒤에 바꾼다(IT 와 같은 이유 — 권한 없는 계정에 넓은 빈 화면이 남지 않게).
+  const _appEl = document.getElementById('app');
+  if (_appEl) _appEl.style.maxWidth = ['list','approval','admin'].includes(name) ? '1280px' : '';
   ['reg','disposal','transfer','list','approval','admin'].forEach((t,i) => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
     const btn = document.getElementById('tab-' + t + '-btn');
@@ -2579,6 +2583,19 @@ function fmtDate(iso) {
     ' ' + String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
 }
 
+/* ── Purpose of Request 칸(10-06) ── 목록 · 결재함 · 관리자 표에서 「무엇 때문에」 를 바로 보게 한다.
+   유형마다 담긴 칸이 다르다: Registration = Purpose(신청사유 · 비고가 붙어 있을 수 있음), Disposal = Reason(Reason of Loss / Damage),
+   Transfer = Reason(Reason of Transfer). 여러 줄 글은 한 줄로 접고 칸 폭을 넘으면 말줄임 — 전체는 마우스를 올리면 보인다(IT 「요청 제목」 칸과 같은 방식). */
+function faPurposeOf(f) {
+  if (!f) return '';
+  const raw = f.FAType === 'Registration' ? f.Purpose : f.Reason;
+  return spText(raw || '');
+}
+function faPurposeCell(f) {
+  const full = faPurposeOf(f), one = full.replace(/\s+/g, ' ').trim();
+  return '<td class="c-purpose" title="' + escHtml(full) + '">' + (one ? escHtml(one) : '<span style="color:#c8c6c4">-</span>') + '</td>';
+}
+
 async function loadMyList() {
   const tbody = document.getElementById('list-body');
   dynLoadStart('FA 데이터 불러오는 중');
@@ -2588,8 +2605,8 @@ async function loadMyList() {
     const mine = data.value
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
-    if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '신청 내역이 없습니다.', 6); return; }
-    dynLoadEnd(); pgSet('list', mine, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + (f.FAType||'') + '</span></td><td>' + (f.Title||'') + '</td><td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td><td style="text-align:center;vertical-align:middle;padding:6px 8px;">'+_wdBtn(item.id,'FA_Approvals','FA_Requests',f.Status)+'</td></tr>'; }, '신청 내역이 없습니다.', 5);
+    if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '신청 내역이 없습니다.', 7); return; }
+    dynLoadEnd(); pgSet('list', mine, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + (f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td>' + faPurposeCell(f) + '<td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td><td style="text-align:center;vertical-align:middle;padding:6px 8px;">'+_wdBtn(item.id,'FA_Approvals','FA_Requests',f.Status)+'</td></tr>'; }, '신청 내역이 없습니다.', 7);
   } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
@@ -2620,13 +2637,13 @@ async function loadApprovalQueue() {
     const _r = apprData.value.filter(function(i){ return isMyAppr(i.fields.ApproverEmail); }); const _dm = _r.reduce(function(acc,i){var rid=String(i.fields.RequestID);if(!acc[rid]||i.fields.ApprovalOrder<acc[rid].fields.ApprovalOrder)acc[rid]=i;return acc;},{}); const mine = Object.values(_dm)
       
       .sort(function(a,b){ return b.fields.RequestID - a.fields.RequestID; });
-    if (!mine.length) { dynLoadEnd(); pgSet('appr', [], null, '결재 대기 항목이 없습니다.', 7); return; }
+    if (!mine.length) { dynLoadEnd(); pgSet('appr', [], null, '결재 대기 항목이 없습니다.', 8); return; }
     const rows = mine.map(function(item) {
       const f = item.fields;
       const rf = reqMap[String(f.RequestID)] || {};
-      return '<tr onclick="showDetail(' + f.RequestID + ')" style="cursor:pointer"><td style="color:#0078d4">' + f.RequestID + '</td><td>' + (rf.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(rf.FAType) + '">' + (rf.FAType||'') + '</span></td><td>' + (rf.Title||'') + '</td><td><span class="badge badge-' + (rf.Status||'대기') + '">' + (rf.Status||'') + '</span></td><td>' + (rf.RequestDate ? fmtDate(rf.RequestDate) : '') + '</td><td onclick="event.stopPropagation()"><button class="btn-approve" onclick="showConfirm(' + item.id + ',\'승인\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">승인</button> <button class="btn-reject" onclick="showConfirm(' + item.id + ',\'반려\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">반려</button></td></tr>';
+      return '<tr onclick="showDetail(' + f.RequestID + ')" style="cursor:pointer"><td style="color:#0078d4">' + f.RequestID + '</td><td title="' + escHtml(rf.RequesterEmail||'') + '">' + escHtml(rf.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(rf.FAType) + '">' + (rf.FAType||'') + '</span></td><td title="' + escHtml(rf.Title||'') + '">' + escHtml(rf.Title||'') + '</td>' + faPurposeCell(rf) + '<td><span class="badge badge-' + (rf.Status||'대기') + '">' + (rf.Status||'') + '</span></td><td>' + (rf.RequestDate ? fmtDate(rf.RequestDate) : '') + '</td><td onclick="event.stopPropagation()"><button class="btn-approve" onclick="showConfirm(' + item.id + ',\'승인\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">승인</button> <button class="btn-reject" onclick="showConfirm(' + item.id + ',\'반려\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">반려</button></td></tr>';
     });
-    dynLoadEnd(); pgSet('appr', rows, function(r){ return r; }, '결재 대기 항목이 없습니다.', 7);
+    dynLoadEnd(); pgSet('appr', rows, function(r){ return r; }, '결재 대기 항목이 없습니다.', 8);
   } catch(e) { dynLoadEnd(); console.error('loadApprovalQueue error:', e); }
 }
 
@@ -3132,7 +3149,7 @@ async function exportAdminExcel() {
       if (n > maxAppr) maxAppr = n;
     });
 
-    const headers = ['번호','신청자','Title','유형(FAType)','FA Code','상태','신청일'];
+    const headers = ['번호','신청자','Title','Purpose of Request','유형(FAType)','FA Code','상태','신청일'];
     for (let i = 1; i <= maxAppr; i++) {
       headers.push(i+'차 역할', i+'차 결재자', i+'차 이메일', i+'차 상태', i+'차 일시', i+'차 Comment');
     }
@@ -3144,7 +3161,7 @@ async function exportAdminExcel() {
       const f = item.fields;
       const aprs = (apprMap[String(item.id)] || []).sort((a,b) => (a.ApprovalOrder||0)-(b.ApprovalOrder||0));
       const row = [
-        _xlRank(item.id), f.RequesterEmail||'', f.Title||'', f.FAType||'',
+        _xlRank(item.id), f.RequesterEmail||'', f.Title||'', faPurposeOf(f), f.FAType||'',
         f.FACode||'', f.Status||'',
         f.RequestDate ? fmtDate(f.RequestDate) : ''
       ];
@@ -3158,7 +3175,7 @@ async function exportAdminExcel() {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    const colWidths = [{wch:6},{wch:28},{wch:26},{wch:14},{wch:14},{wch:10},{wch:18}];
+    const colWidths = [{wch:6},{wch:28},{wch:26},{wch:50},{wch:14},{wch:14},{wch:10},{wch:18}];
     for (let i = 0; i < maxAppr; i++) colWidths.push({wch:20},{wch:16},{wch:28},{wch:10},{wch:18},{wch:30});
     ws['!cols'] = colWidths;
 
@@ -3197,8 +3214,8 @@ async function loadAdminList() {
     if (filterType) items = items.filter(i => i.fields.FAType === filterType);
     if (filterSearch) items = items.filter(i => (i.fields.RequesterEmail||'').toLowerCase().includes(filterSearch));
     document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
-    dynLoadEnd(); pgSet('admin', items, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td style="color:#0078d4;font-weight:600">' + (idx+1) + '</td><td class="c-mail" title="' + escHtml(f.RequesterEmail||'') + '">' + escHtml(f.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + (f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td><td class="c-code" title="' + escHtml(f.FACode||'') + '">' + (f.FACode ? '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>' : '<span style="color:#a19f9d">-</span>') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'') + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '조회 결과가 없습니다.', 7);
-  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+    dynLoadEnd(); pgSet('admin', items, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td style="color:#0078d4;font-weight:600">' + (idx+1) + '</td><td class="c-mail" title="' + escHtml(f.RequesterEmail||'') + '">' + escHtml(f.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + (f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td>' + faPurposeCell(f) + '<td class="c-code" title="' + escHtml(f.FACode||'') + '">' + (f.FACode ? '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>' : '<span style="color:#a19f9d">-</span>') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'') + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '조회 결과가 없습니다.', 8);
+  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
 }
 
 // ── 파일 열기: Graph API downloadUrl → 새 탭 ──
@@ -4002,7 +4019,14 @@ function _wdBtn(itemId, aprList, reqList, status) {
 /* 좁은 화면(휴대폰·창 축소): 표가 카드 밖으로 삐져나오지 않게 — GW·IT 와 같은 방식(09-10).
    표는 최소 폭을 지키고, 카드 안에서 가로 스크롤한다. 글자가 카드 밖 회색 배경으로 나가지 않는다. */
 #tab-admin .card,#tab-approval .card,#tab-list .card{overflow-x:auto;-webkit-overflow-scrolling:touch}
-#tab-admin .list-table,#tab-approval .list-table,#tab-list .list-table{min-width:820px}
+#tab-admin .list-table,#tab-approval .list-table,#tab-list .list-table{min-width:980px}
+/* 세 표 모두 폭은 머리글이 정하고(Purpose of Request 가 남는 폭을 받는다), 넘치는 글은 말줄임 — 관리자 표와 같은 규칙(10-06) */
+#tab-list .list-table,#tab-approval .list-table{table-layout:fixed;width:100%}
+#tab-list .list-table th,#tab-list .list-table td,#tab-approval .list-table th,#tab-approval .list-table td{padding-left:6px;padding-right:6px}
+#tab-list .list-table th,#tab-approval .list-table th{white-space:normal}
+#tab-list .list-table td,#tab-approval .list-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tab-approval .list-table td:last-child,#tab-list .list-table td:last-child{overflow:visible;text-overflow:clip}
+.list-table td.c-purpose{color:#323130}
 @media (max-width:640px){
   #tab-admin .card,#tab-approval .card,#tab-list .card{padding:16px 12px}
 }
