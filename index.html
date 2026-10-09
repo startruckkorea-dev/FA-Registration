@@ -463,6 +463,102 @@ html.deeplink-open.deeplink-busy #deeplink-loader {
   } catch (e) { /* 판별이 안 되면 평소대로 연다 */ }
 })();
 </script>
+<style id="aps-mobile">
+/* APS 모바일(10-09 · aps-mobile) — 767px 이하 전용. 웹 화면 무변경 */
+/* FA Registration: 본문 끝(body 안)에 공통 style 블록 이 한 번 더 있어 같은 우선순위면 그쪽이 이긴다 → #app · 모달 id 로 한 단계 올려 쓴다.
+   CCTR 선택 상자(긴 옵션)가 2열 격자를 밀어 문서가 427px 로 넘치던 것 · Transfer 상세 이동 전/후 2열에서 값이 한 글자씩 꺾이던 것을 잡는다. */
+@media (max-width: 767px) {
+  /* ── 바탕 · 바깥 여백 ── */
+  #app { padding: 12px 12px 24px; }
+  #app .card { padding: 16px 14px; margin-bottom: 12px; }
+  #app #tab-list .card, #app #tab-approval .card, #app #tab-admin .card { padding: 14px 12px; }
+  #app .card-title { margin-bottom: 14px; }
+  #app .section-title { margin: 16px 0 10px; }
+
+  /* ── 헤더(V3) — 띠 한 줄 · 제목 한 단계 작게 · BU Admin 줄바꿈 허용 ── */
+  #app .aps-hdr { padding: 0 16px 14px; margin-bottom: 12px; }
+  #app .aps-band { flex-basis: calc(100% + 32px); margin-left: -16px; margin-right: -16px; padding: 0 16px; }
+  #app .aps-band-crumb { overflow: hidden; text-overflow: ellipsis; }
+  #app .header .title { font-size: 1rem; line-height: 1.35; }
+  #app .aps-sub { font-size: 11.5px; }
+  #app .aps-hdr .hdr-contact { display: grid; max-width: 100%; font-size: 11px; }
+  #app .aps-hdr .hdr-contact-mail { min-width: 0; overflow-wrap: anywhere; }
+
+  /* ── 탭 — 한 줄 가로 스크롤 · 터치 높이 42px ── */
+  #app .tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-bottom: 12px; }
+  #app .tabs::-webkit-scrollbar { display: none; }
+  #app .tabs .tab { flex: 0 0 auto; white-space: nowrap; min-height: 42px; padding: 10px 15px; display: inline-flex; align-items: center; }
+
+  /* ── 폼 — 1열 · 입력 폭 100% · 글자 16px(iOS 확대 방지) ── */
+  #app .form-row, #app .form-row.three, #app .form-row.four, #app .form-row.full { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
+  #app .form-group { min-width: 0; }
+  #app .form-group select, #app .form-group input, #app .form-group textarea { width: 100%; min-width: 0; max-width: 100%; padding: 8px 10px; }
+  #app input:not([type=checkbox]):not([type=radio]):not([type=file]), #app select, #app textarea,
+  #confirm-comment, #fa-code-input { font-size: 16px !important; }
+  #app input[type=date] { min-height: 40px; }
+
+  /* 결재선 — 세로 한 줄씩 */
+  #app .appr-line-preview { padding: 10px 12px; }
+  #app .appr-block { padding: 12px; }
+  #app .appr-select-row, #app .appr-info, #app .appr-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  #app .appr-select-row select, #app .appr-info input { min-width: 0; padding: 8px 10px; }
+
+  /* 처분 · 비용 · 이동 자산표 — 표 상자 안에서만 가로 스크롤 */
+  #app .fa-table input, #app .fa-table select { padding: 6px 8px; }
+  #app .fa-table input[type=date] { min-width: 150px; }
+
+  /* 단추 줄 — 2열 꽉 채움 */
+  #app .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  #app .btn-row > button { width: 100%; min-height: 44px; padding: 10px 12px; }
+  #app .file-area { padding: 16px 12px; }
+
+  /* ── 목록 · 결재함 · 관리자 — 카드(표 상자)만 가로 스크롤 ── */
+  #app #tab-list .card, #app #tab-approval .card, #app #tab-admin .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* 관리자 필터 줄: 검색칸 한 줄 꽉 채움 */
+  #app #tab-admin .card > div:first-child { gap: 8px !important; }
+  #app #admin-filter-status, #app #admin-filter-type { flex: 1 1 40%; min-width: 0; min-height: 40px; }
+  #app #admin-filter-search { flex: 1 1 100%; width: 100% !important; min-height: 40px; order: 1; }
+  #app #admin-count { order: 2; margin-left: 0 !important; }
+  #app #tab-admin .card > div:first-child > button { order: 3; margin-left: auto; min-height: 36px; }
+
+  /* ── 상세 모달 ── 699px 이하에서만: PDF 출력(html2canvas · windowWidth 700)이 같은 화면을 700px 폭으로 다시 그리므로
+     그 폭에서는 이 규칙이 걸리지 않아야 출력물이 웹과 똑같다. 휴대폰은 모두 700px 미만이다. */
+  @media (max-width: 699.98px) {
+    #detail-modal .modal-box { width: calc(100% - 20px); max-width: none; max-height: 90vh; max-height: 90dvh; padding: 18px 16px 20px; -webkit-overflow-scrolling: touch; }
+    #detail-modal .modal-title { padding-right: 34px; gap: 8px; }
+    #detail-modal .modal-close { top: 10px; right: 10px; width: 36px; height: 36px; }
+    #detail-modal .modal-row { gap: 10px; }
+    #detail-modal .modal-label { width: 100px; min-width: 100px; flex-shrink: 0; }
+    #detail-modal .modal-value { min-width: 0; word-break: normal; overflow-wrap: anywhere; }
+    /* Transfer 이동 전/후 2열 → 위아래 */
+    #modal-content > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: minmax(0, 1fr) !important; }
+    /* 처분 · 비용 · 이동 자산표 — 칸 줄바꿈 없이 표 상자 안에서만 가로 스크롤 */
+    #modal-content div[style*="overflow-x:auto"] > table th, #modal-content div[style*="overflow-x:auto"] > table td { white-space: nowrap !important; word-break: normal !important; }
+    #detail-modal .modal-action .btn-approve, #detail-modal .modal-action .btn-reject { min-height: 46px; }
+  }
+
+  /* ── 확인 · 안내 · FA Code 팝업 ── */
+  #confirm-modal > div { width: calc(100% - 20px) !important; padding: 22px 18px 18px !important; }
+  #confirm-modal > div > div:last-child, #fa-code-modal > div > div:last-child { display: grid !important; grid-template-columns: 1fr 1fr; }
+  #confirm-modal > div > div:last-child > button, #fa-code-modal > div > div:last-child > button { min-height: 44px; }
+  #fa-code-modal > div { width: calc(100% - 20px) !important; padding: 24px 18px 18px !important; }
+  #fa-alert-modal .fa-alert-box { width: calc(100% - 40px); padding: 24px 20px; }
+  #fa-alert-modal .fa-alert-btn { width: 100%; min-height: 44px; }
+  #no-auth-modal > div { width: calc(100% - 20px) !important; padding: 28px 20px 22px !important; }
+  #no-auth-modal > div > button { width: 100%; min-height: 44px; }
+
+  /* ── 로딩 ── */
+  #dyn-loading .dyn-box, #loading .loading-box { max-width: calc(100% - 40px); padding: 24px 28px; }
+
+  /* ── 로그인 ── */
+  #login-screen { padding: 24px 16px 96px; }
+  #login-screen .login-card { padding: 40px 24px 28px; border-radius: 18px; }
+  #login-screen .login-page-footer { flex-direction: column; gap: 2px; padding: 8px 16px; text-align: center; font-size: 10.5px; line-height: 1.4; }
+
+  footer { padding: 16px 14px !important; margin-top: 24px !important; }
+  footer > div > div { text-align: left !important; }
+}
+</style>
 </head>
 <body>
 <div id="deeplink-loader">
