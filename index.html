@@ -3390,7 +3390,7 @@ async function showDetail(requestId) {
     html += sec('첨부파일') + filesHtml + apprHtml;
 
     document.getElementById('modal-content').innerHTML = html;
-    window._faCurrentDetail = { requestId, title: f.Title||'', faType: f.FAType||'', requesterEmail: f.RequesterEmail||'' };
+    window._faCurrentDetail = { requestId, title: f.Title||'', faType: f.FAType||'', requesterEmail: f.RequesterEmail||'', status: f.Status||'' };
     const pdfBtn = document.getElementById('btn-export-pdf');
     if (pdfBtn) pdfBtn.style.display = 'flex';
     const modal = document.getElementById('detail-modal');
@@ -3901,8 +3901,12 @@ async function exportFaDetailPdf() {
     a.download = saveFileName;
     document.body.appendChild(a); a.click();
     setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+    // 출력 기록(10-10 pdflog) — 파일을 내려보낸 뒤 Logging_data 에 남긴다(Excel 내보내기 · 관리자 탭과 같은 logAction).
+    // logAction 은 기다리지 않는 비차단 호출이고 안에서 오류를 삼킨다 — 기록이 실패 · 지연돼도 PDF 는 그대로 나간다.
+    try { logAction('FA Registration', 'PDF 출력', { 신청: info.title || '', id: info.requestId || '', FA유형: info.faType || '', 상태: info.status || '', 종류: '상세내용 PDF', 파일: saveFileName, 페이지: mainDoc.getPageCount() }); } catch (le) { console.warn('[Log] PDF 출력 기록 생략:', le && le.message); }
 
   } catch(e) {
+    try { const _li = window._faCurrentDetail || {}; logAction('FA Registration', 'PDF 출력 실패', { 신청: _li.title || '', id: _li.requestId || '', FA유형: _li.faType || '', 상태: _li.status || '', 종류: '상세내용 PDF', 오류: String((e && e.message) || e || '').slice(0, 200) }); } catch (le) { console.warn('[Log] PDF 출력 실패 기록 생략:', le && le.message); }
     alert('PDF 생성 오류: ' + e.message);
     console.error(e);
   } finally {
