@@ -410,6 +410,14 @@ function spText(s){
     .replace(/&amp;/g,'&').replace(/\n{3,}/g,'\n\n').trim();
 }
 function safeText(s){ return escHtml(spText(s)); }
+// 여러 줄 글(신청사유 · 사유)용(10-10). SharePoint 서식 텍스트(ExternalClass 래퍼 · div · p · br 태그 등)로 온 값만 spText 로 글자만 남기고,
+// 평범한 글은 그대로 둔다 — '<주식회사>' · 'A < B' 처럼 꺾쇠가 든 정상 입력이 지워지지 않게. 화면에는 반드시 escHtml 을 거쳐 넣는다.
+const _FA_RICH_RE = /<\/?(div|p|br|span|font|strong|b|i|u|em|ul|ol|li)\b[^>]*>/i;
+function faMlText(s){ const t = String(s == null ? '' : s); return _FA_RICH_RE.test(t) ? spText(t) : t; }
+// onclick="showConfirm(…,'역할')" 처럼 JS 문자열 인자로 넣는 역할 값(10-10).
+// 작은따옴표 · 역슬래시는 JS 문자열을 끝내거나 깨뜨리므로 빼고, 큰따옴표 · <, > 는 속성을 벗어나지 못하게 escHtml 로 바꾼다.
+// 정상 역할('회계담당자' · '1차결재자(이동전 Line Manager)' …)은 그대로 넘어간다 — processApproval 의 「회계담당자」 판정도 그대로.
+function faRoleArg(role){ return escHtml(String(role == null ? '' : role).replace(/['\\]/g, '')); }
 // ?openId= 단독 상세보기 모드 판별을 최대한 앞당긴다.
 // DOMContentLoaded까지 기다리면 작성 폼이 1~4초간 그대로 보였다가 사라지는 깜빡임이 생기므로,
 // <head> 파싱 시점에 <html>에 클래스를 붙여 #app이 처음부터 렌더링되지 않게 한다.
@@ -2852,8 +2860,8 @@ async function loadMyList() {
       .filter(i => (i.fields.RequesterEmail||'').toLowerCase() === user.username.toLowerCase())
       .sort((a,b) => new Date(b.fields.RequestDate) - new Date(a.fields.RequestDate));
     if (!mine.length) { dynLoadEnd(); pgSet('list', [], null, '신청 내역이 없습니다.', 7); return; }
-    dynLoadEnd(); pgSet('list', mine, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + (f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td>' + faPurposeCell(f) + '<td><span class="badge badge-' + f.Status + '">' + f.Status + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td><td style="text-align:center;vertical-align:middle;padding:6px 8px;">'+_wdBtn(item.id,'FA_Approvals','FA_Requests',f.Status)+'</td></tr>'; }, '신청 내역이 없습니다.', 7);
-  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+    dynLoadEnd(); pgSet('list', mine, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td>' + (idx+1) + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + escHtml(f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td>' + faPurposeCell(f) + '<td><span class="badge badge-' + escHtml(f.Status) + '">' + escHtml(f.Status) + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td><td style="text-align:center;vertical-align:middle;padding:6px 8px;">'+_wdBtn(item.id,'FA_Approvals','FA_Requests',f.Status)+'</td></tr>'; }, '신청 내역이 없습니다.', 7);
+  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a4262c">' + escHtml(e.message) + '</td></tr>'; }
 }
 
 async function checkApprover() {
@@ -2887,7 +2895,7 @@ async function loadApprovalQueue() {
     const rows = mine.map(function(item) {
       const f = item.fields;
       const rf = reqMap[String(f.RequestID)] || {};
-      return '<tr onclick="showDetail(' + f.RequestID + ')" style="cursor:pointer"><td style="color:#0078d4">' + f.RequestID + '</td><td title="' + escHtml(rf.RequesterEmail||'') + '">' + escHtml(rf.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(rf.FAType) + '">' + (rf.FAType||'') + '</span></td><td title="' + escHtml(rf.Title||'') + '">' + escHtml(rf.Title||'') + '</td>' + faPurposeCell(rf) + '<td><span class="badge badge-' + (rf.Status||'대기') + '">' + (rf.Status||'') + '</span></td><td>' + (rf.RequestDate ? fmtDate(rf.RequestDate) : '') + '</td><td onclick="event.stopPropagation()"><button class="btn-approve" onclick="showConfirm(' + item.id + ',\'승인\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">승인</button> <button class="btn-reject" onclick="showConfirm(' + item.id + ',\'반려\',' + f.RequestID + ',\'' + (f.ApproverRole||'') + '\')">반려</button></td></tr>';
+      return '<tr onclick="showDetail(' + (parseInt(f.RequestID, 10) || 0) + ')" style="cursor:pointer"><td style="color:#0078d4">' + escHtml(f.RequestID) + '</td><td title="' + escHtml(rf.RequesterEmail||'') + '">' + escHtml(rf.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(rf.FAType) + '">' + escHtml(rf.FAType||'') + '</span></td><td title="' + escHtml(rf.Title||'') + '">' + escHtml(rf.Title||'') + '</td>' + faPurposeCell(rf) + '<td><span class="badge badge-' + escHtml(rf.Status||'대기') + '">' + escHtml(rf.Status||'') + '</span></td><td>' + (rf.RequestDate ? fmtDate(rf.RequestDate) : '') + '</td><td onclick="event.stopPropagation()"><button class="btn-approve" onclick="showConfirm(' + item.id + ',\'승인\',' + (parseInt(f.RequestID, 10) || 0) + ',\'' + faRoleArg(f.ApproverRole) + '\')">승인</button> <button class="btn-reject" onclick="showConfirm(' + item.id + ',\'반려\',' + (parseInt(f.RequestID, 10) || 0) + ',\'' + faRoleArg(f.ApproverRole) + '\')">반려</button></td></tr>';
     });
     dynLoadEnd(); pgSet('appr', rows, function(r){ return r; }, '결재 대기 항목이 없습니다.', 8);
   } catch(e) { dynLoadEnd(); console.error('loadApprovalQueue error:', e); }
@@ -3014,34 +3022,46 @@ async function uniProcessApproval(apprId, action, reqId, sysKey, comment='') {
 async function processApproval(apprId, action, reqId, role, comment='') {
   loading(true);
   try {
-        const _cur = await api('/sites/'+siteId+'/lists/FA_Approvals/items/'+apprId+'?$expand=fields');
+        let _cur = await api('/sites/'+siteId+'/lists/FA_Approvals/items/'+apprId+'?$expand=fields');
     const _curStatus = (_cur.fields.Status?.Value || _cur.fields.Status || '').trim();
     if(_curStatus !== '대기'){showAlert('이미 처리된 결재 항목입니다.','다른 창에서 처리되었거나 이미 완료된 항목입니다.','⚠️');await loadApprovalQueue();return;}
+    // 회계담당자 승인은 FA Code 를 먼저 받는다(10-10).
+    // 예전에는 결재행을 「승인」으로 먼저 쓰고 FA Code 창을 띄웠다. 창이 떠 있는 동안 탭을 닫거나 새로고침하면
+    // 행은 승인 · 다음 결재자는 대기(잠김)로 남아 아무도 처리할 수 없었고, 취소 롤백은 대리 처리(AAC)로 바뀐
+    // ApproverEmail · ApproverRole 을 되돌리지 못했다. 이제 코드를 받기 전에는 아무것도 쓰지 않으므로 되돌릴 일이 없다.
+    // 빈 코드는 받지 않는다(창의 안내 「취소 시 승인이 처리되지 않습니다」 와 같은 뜻 — 코드 없는 승인을 만들지 않는다).
+    let _faCode = '';
+    if (action === '승인' && (role === '회계담당자' || String(aacRoleBase(_cur.fields.ApproverRole)).trim() === '회계담당자')) {
+      loading(false);
+      const result = await _showFaCodeModal();
+      _faCode = String((result && result.code) || '').trim();
+      if (!result || !result.confirmed || !_faCode) {
+        showAlert('승인이 취소되었습니다.', 'FA Code 미입력로 승인이 처리되지 않았습니다.', '⚠️');
+        await loadApprovalQueue(); await checkApprover();
+        return;
+      }
+      loading(true);
+      // 코드를 입력하는 동안 다른 창 · 대리인이 처리했을 수 있다 — 쓰기 직전에 다시 확인한다
+      _cur = await api('/sites/'+siteId+'/lists/FA_Approvals/items/'+apprId+'?$expand=fields');
+      if ((_cur.fields.Status?.Value || _cur.fields.Status || '').trim() !== '대기') {
+        showAlert('이미 처리된 결재 항목입니다.','다른 창에서 처리되었거나 이미 완료된 항목입니다.','⚠️'); await loadApprovalQueue(); return;
+      }
+    }
+    // 결재행에 쓸 값을 먼저 만든다 — 대리 기간이 끝났으면(aacPatchWith 예외) 아무것도 쓰기 전에 멈춘다
+    const _aprPatch = aacPatchWith({ Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }, _cur.fields);
+    if (_faCode) {
+      // FA Code 를 결재행보다 먼저 저장한다 — 이 쓰기가 실패하면 결재행은 대기 그대로라 다시 승인하면 된다.
+      await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', {
+        fields: { FACode: _faCode }
+      });
+    }
 await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
-      fields: aacPatchWith({ Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }, _cur.fields)
+      fields: _aprPatch
     });
     if (action === '반려') {
       await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
     } else if (action === '승인') {
-      // 회계담당자 승인 시 FA Code 입력 (취소 시 결재 중단)
-      if (role === '회계담당자') {
-        loading(false);
-        const result = await _showFaCodeModal();
-        if (!result.confirmed) {
-          // 취소 → 승인 PATCH 롤백 (대기 상태로 되돌리기)
-          await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
-            fields: { Status: '대기', ApprovalDate: null, Comment: '' }
-          });
-          showAlert('승인이 취소되었습니다.', 'FA Code 미입력로 승인이 취소되었습니다.', '⚠️');
-          await loadApprovalQueue(); await checkApprover();
-          return;
-        }
-        loading(true);
-        // FA Code 저장
-        await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', {
-          fields: { FACode: result.code || '' }
-        });
-      }
+      // (회계담당자 승인의 FA Code 는 위에서 결재행보다 먼저 저장했다)
       // 다음 대기(잠김) 결재자 확인
       // 센티넬 — 위 통합 결재함 경로와 같은 이유로 Status 조건을 뺀다.
       const _ap = await aprRowsRetry('/sites/'+siteId+"/lists/FA_Approvals/items?$expand=fields&$top=50&$filter=fields/RequestID eq "+parseInt(reqId));
@@ -3078,7 +3098,11 @@ async function showDetail(requestId) {
 
     // ── 헬퍼 ──
     const sec = (title) => '<div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:#1F4E79;padding:6px 10px;background:#EFF6FF;border-left:3px solid #1F4E79;border-radius:3px">' + title + '</div>';
-    const row = (label, value, full) => {
+    // 10-10: 값을 그대로 innerHTML 에 넣어 신청자가 쓴 자산명 · PO No. · Vendor · Serial · 사유 · 팀 · 주소 등이 결재자 화면에서 실행될 수 있었다.
+    // row() 는 값을 이스케이프하고(여러 줄 칸은 SharePoint 서식 래퍼만 걷어낸 뒤), 배지처럼 HTML 로 만든 값만 rowRaw() 로 넘긴다.
+    const row = (label, value, full) => rowRaw(label,
+      (value === undefined || value === null || value === '') ? '' : escHtml(full ? faMlText(value) : String(value)), full);
+    const rowRaw = (label, value, full) => {
       const v = (value === undefined || value === null || value === '') ? '-' : value;
       return full
         ? '<div style="padding:7px 0;border-bottom:0.5px solid #edebe9;font-size:13px"><div style="font-size:11px;color:#605e5c;margin-bottom:3px">' + label + '</div><div style="white-space:pre-wrap;color:#323130">' + v + '</div></div>'
@@ -3112,19 +3136,21 @@ async function showDetail(requestId) {
         if (newFmt.length === 3) {
           const driveId = newFmt[1].trim();
           const itemId  = newFmt[2].trim();
-          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + '</a></div>';
+          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-dl-link" data-drive="' + encodeURIComponent(driveId) + '" data-id="' + encodeURIComponent(itemId) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + escHtml(name) + '</a></div>';
         }
         // 구 형식: name|webUrl → Graph API 경로로 변환해서 다운로드
         const parts = entry.split('|');
         const url = parts[1] ? parts[1].trim() : '';
-        if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + name + '</div>';
+        if (!url) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + escHtml(name) + '</div>';
         // AttachedFiles 경로 추출 → Graph API /root:/경로:/content 형식으로 변환
         const afIdx = url.indexOf('/AttachedFiles/');
         if (afIdx >= 0) {
           const relPath = decodeURIComponent(url.slice(afIdx + 1)); // AttachedFiles/FA_.../34/file.png
-          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-legacy-link" data-path="' + encodeURIComponent(relPath) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + name + '</a></div>';
+          return '<div style="padding:4px 0;font-size:13px">📎 <a href="#" class="file-legacy-link" data-path="' + encodeURIComponent(relPath) + '" data-name="' + encodeURIComponent(name) + '" style="color:#0078d4;cursor:pointer">' + escHtml(name) + '</a></div>';
         }
-        return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + url + '" target="_blank" style="color:#0078d4">' + name + '</a></div>';
+        // 링크는 https:// 만 연다(javascript: 등은 이름만 글자로)
+        if (!/^https:\/\//i.test(url)) return '<div style="padding:4px 0;font-size:13px;color:#605e5c">📎 ' + escHtml(name) + '</div>';
+        return '<div style="padding:4px 0;font-size:13px">📎 <a href="' + escHtml(url) + '" target="_blank" rel="noopener" style="color:#0078d4">' + escHtml(name) + '</a></div>';
       }).filter(Boolean).join('');
     }
 
@@ -3140,18 +3166,18 @@ async function showDetail(requestId) {
           apprList.map(a => {
             const af = a.fields;
             return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:9px 12px;border-bottom:1px solid #edebe9">' +
-              '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _o=String(af.ApprovalOrder||'');const _l=faRoleLabel(aacRoleBase(af.ApproverRole));return '<b>'+_o+'차</b> 결재자'+(_l?'('+escHtml(_l)+')':'')+aacRolePill(af.ApproverRole, af.Status);})() + '</div>' +
-              '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + (af.ApproverName||'') + ' · ' + (af.ApproverEmail||'') + '</div>' +
+              '<div><div style="font-weight:600;font-size:13px;color:#323130">' + (()=>{const _o=String(af.ApprovalOrder||'');const _l=faRoleLabel(aacRoleBase(af.ApproverRole));return '<b>'+escHtml(_o)+'차</b> 결재자'+(_l?'('+escHtml(_l)+')':'')+aacRolePill(af.ApproverRole, af.Status);})() + '</div>' +
+              '<div style="font-size:12px;color:#605e5c;margin-top:2px">' + escHtml(af.ApproverName||'') + ' · ' + escHtml(af.ApproverEmail||'') + '</div>' +
               (af.ApprovalDate ? '<div style="font-size:11px;color:#a19f9d;margin-top:2px">' + fmtDate(af.ApprovalDate) + '</div>' : '') +
               (af.Comment ? '<div style="margin-top:4px;background:#fff;border:1px solid #edebe9;border-radius:4px;padding:4px 8px;font-size:12px;color:#605e5c">💬 ' + safeText(af.Comment) + '</div>' : '') +
-              '</div><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:700;font-size:12px;white-space:nowrap;margin-left:8px">' + (af.Status||'') + '</span></div>';
+              '</div><span style="color:' + (sc[af.Status]||'#323130') + ';font-weight:700;font-size:12px;white-space:nowrap;margin-left:8px">' + escHtml(af.Status||'') + '</span></div>';
           }).join('') + '</div>';
         // 내 결재 대기 건 버튼
         const myPending = apprList.find(a => isMyAppr(a.fields.ApproverEmail) && (a.fields.Status||'').trim() === '대기');
         if (myPending) {
           apprHtml += '<div class="modal-action">' +
-            '<button onclick="showConfirm(' + myPending.id + ',\'승인\',' + requestId + ',\'' + (myPending.fields.ApproverRole||'') + '\')" class="btn-approve">✅ 승인</button>' +
-            '<button onclick="showConfirm(' + myPending.id + ',\'반려\',' + requestId + ',\'' + (myPending.fields.ApproverRole||'') + '\')" class="btn-reject">❌ 반려</button>' +
+            '<button onclick="showConfirm(' + myPending.id + ',\'승인\',' + requestId + ',\'' + faRoleArg(myPending.fields.ApproverRole) + '\')" class="btn-approve">✅ 승인</button>' +
+            '<button onclick="showConfirm(' + myPending.id + ',\'반려\',' + requestId + ',\'' + faRoleArg(myPending.fields.ApproverRole) + '\')" class="btn-reject">❌ 반려</button>' +
             '</div>';
         }
       }
@@ -3161,10 +3187,10 @@ async function showDetail(requestId) {
     let html = sec('기본 정보') +
       row('제목', f.Title) +
       row('신청자', f.RequesterEmail) +
-      row('FA 유형', '<span class="badge badge-type ' + faTypeCls(f.FAType) + '" style="font-size:.75rem">' + (f.FAType||'') + '</span>') +
-      row('상태', '<span class="badge-' + (function(s){var v=(s||'대기').trim();return v.indexOf('철회')===0?'철회':(v==='승인'?'승인완료':v);})(f.Status) + '">' + (f.Status||'대기') + '</span>') +
+      rowRaw('FA 유형', '<span class="badge badge-type ' + faTypeCls(f.FAType) + '" style="font-size:.75rem">' + escHtml(f.FAType||'') + '</span>') +
+      rowRaw('상태', '<span class="badge-' + escHtml((function(s){var v=String(s||'대기').trim();return v.indexOf('철회')===0?'철회':(v==='승인'?'승인완료':v);})(f.Status)) + '">' + escHtml(f.Status||'대기') + '</span>') +
       row('신청일', f.RequestDate ? fmtDate(f.RequestDate) : '') +
-      (f.FACode ? row('FA Code', '<strong style="color:#107c10">' + f.FACode + '</strong>') : '');
+      (f.FACode ? rowRaw('FA Code', '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>') : '');
 
     // ── Registration ──
     if (f.FAType === 'Registration') {
@@ -3460,8 +3486,8 @@ async function loadAdminList() {
     if (filterType) items = items.filter(i => i.fields.FAType === filterType);
     if (filterSearch) items = items.filter(i => (i.fields.RequesterEmail||'').toLowerCase().includes(filterSearch));
     document.getElementById('admin-count').textContent = '총 ' + items.length + '건';
-    dynLoadEnd(); pgSet('admin', items, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td style="color:#0078d4;font-weight:600">' + (idx+1) + '</td><td class="c-mail" title="' + escHtml(f.RequesterEmail||'') + '">' + escHtml(f.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + (f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td>' + faPurposeCell(f) + '<td class="c-code" title="' + escHtml(f.FACode||'') + '">' + (f.FACode ? '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>' : '<span style="color:#a19f9d">-</span>') + '</td><td><span class="badge badge-' + (f.Status||'대기') + '">' + (f.Status||'') + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '조회 결과가 없습니다.', 8);
-  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a4262c">' + e.message + '</td></tr>'; }
+    dynLoadEnd(); pgSet('admin', items, (item,idx) => { const f = item.fields; return '<tr style="cursor:pointer" onclick="showDetail(' + item.id + ')"><td style="color:#0078d4;font-weight:600">' + (idx+1) + '</td><td class="c-mail" title="' + escHtml(f.RequesterEmail||'') + '">' + escHtml(f.RequesterEmail||'') + '</td><td><span class="badge badge-type ' + faTypeCls(f.FAType) + '">' + escHtml(f.FAType||'') + '</span></td><td title="' + escHtml(f.Title||'') + '">' + escHtml(f.Title||'') + '</td>' + faPurposeCell(f) + '<td class="c-code" title="' + escHtml(f.FACode||'') + '">' + (f.FACode ? '<strong style="color:#107c10">' + escHtml(f.FACode) + '</strong>' : '<span style="color:#a19f9d">-</span>') + '</td><td><span class="badge badge-' + escHtml(f.Status||'대기') + '">' + escHtml(f.Status||'') + '</span></td><td>' + (f.RequestDate ? fmtDate(f.RequestDate) : '') + '</td></tr>'; }, '조회 결과가 없습니다.', 8);
+  } catch(e) { dynLoadEnd(); tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a4262c">' + escHtml(e.message) + '</td></tr>'; }
 }
 
 // ── 파일 열기: Graph API downloadUrl → 새 탭 ──
@@ -4286,6 +4312,8 @@ function _showFaCodeModal() {
 }
 function _confirmFaCode() {
   const code = document.getElementById('fa-code-input').value.trim();
+  // 빈 코드로는 승인하지 않는다(10-10) — 창을 닫지 않고 다시 입력받는다. 그만두려면 「취소」.
+  if (!code) { alert('FA Code를 입력해주세요.'); const _i = document.getElementById('fa-code-input'); if (_i) _i.focus(); return; }
   document.getElementById('fa-code-modal').style.display = 'none';
   if (_faCodeResolve) { _faCodeResolve({ confirmed: true, code }); _faCodeResolve = null; }
 }
