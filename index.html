@@ -1742,12 +1742,39 @@ function logAction(systemName, action, detail) {
         timestampKST: `${dateStr} ${p(now.getUTCHours())}:${p(now.getUTCMinutes())}:${p(now.getUTCSeconds())}`,
         user: rawUser, system: systemName, action, detail: detail || {}
       });
-      await fetch(GRAPH + '/drives/' + driveId + '/root:' + path + ':/content', {
+      const _lr = await fetch(GRAPH + '/drives/' + driveId + '/root:' + path + ':/content', {
         method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body
       });
+      // 저장이 거부돼도(403 · 429 · 5xx) 흔적이 없던 것 — APS(10-10)처럼 콘솔에 경고만 남긴다(10-15). 원 기능엔 영향 없음
+      if (_lr && !_lr.ok) console.warn('[Log] 기록 실패(무시됨, 원 기능엔 영향 없음): HTTP ' + _lr.status + ' —', systemName, action);
     } catch(e) { console.warn('[Log] 기록 실패(무시됨):', e.message); }
   })();
 }
+/* ══ 데이터 변경 기록(10-15) ══
+   상신 · 결재 승인 · 반려 · 철회(이 화면의 통합 결재함에서 처리한 다른 시스템 결재 포함)를 위 logAction 으로 Logging_data 에 남긴다.
+   action 이름 · detail 모양은 APS 통합 결재함(Logging_data/APS 「결재 승인」 · 「결재 반려」)에 맞춘다 —
+   신청번호 · 제목 · 결과 · 차수 · 결재자 · 처리자 · 대리 · 역할 · 의견 글자 수(의견 원문 · 금액 · 계좌 · 연락처 같은 개인정보는 넣지 않는다).
+   IT 계정 제외 규칙(10-01, IT Manager · IT system service)은 logAction 안에서 그대로 적용된다(감사 예외를 두지 않는다 — 10-15 결정).
+   실제 저장(Graph 쓰기)이 끝난 뒤에만 부르고 기다리지 않는다. detail 을 만들다 오류가 나도 원 기능으로 번지지 않게 감싼다.
+   APS 통합 결재함에서 처리한 결재는 APS 가 목록에 직접 써서 이 화면 코드를 거치지 않는다 — 같은 결재가 두 번 남지 않는다. */
+function logChange(systemName, action, mk) {
+  try { logAction(systemName, action, typeof mk === 'function' ? mk() : (mk || {})); }
+  catch (e) { console.warn('[Log] 기록 생략(원 기능엔 영향 없음):', action, e && e.message); }
+}
+function logAprDetail(f, extra) {   // 결재행 fields(처리 전 값) → APS 와 같은 차수 · 결재자 · 처리자 · 대리 · 역할
+  f = f || {};
+  const orig = String(f.ApproverEmail || '');
+  let dg = null; try { dg = (typeof aacDelegatorOf === 'function') ? aacDelegatorOf(orig) : null; } catch (e) {}
+  return Object.assign({
+    차수: f.ApprovalOrder == null ? '' : f.ApprovalOrder,
+    결재자: orig,
+    처리자: String((typeof user !== 'undefined' && user && (user.email || user.username)) || ''),
+    대리: dg ? '예 — ' + (f.ApproverName || dg.name || orig) + ' 님 대신' : '',
+    역할: String(f.ApproverRole || '')
+  }, extra || {});
+}
+function logErrText(e) { return String((e && e.message) || e || '').slice(0, 200); }
+function logReqTitle(f) { return String((f && f.Title) || '').replace(/-\d+$/, ''); }   // 결재행 Title(…_ID-12-3) → 신청 제목(…_ID-12)
 async function api(path, method='GET', body=null, _retry=0) {
   const t = await token();
   const opts = { method, headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Prefer: 'HonorNonIndexedQueriesWarningMayFailRandomly' } };
@@ -2615,6 +2642,7 @@ function tfrSyncA4(){
 }
 
 async function submitRequest(faType) {
+  let _lgRid = '';   // 기록용 신청 번호(10-15) — 신청 행을 만든 뒤에 채운다
   const prefix = faType === 'Registration' ? 'reg' : faType === 'Disposal' ? 'dis' : 'tfr';
   const files = prefix === 'reg' ? regFiles : prefix === 'dis' ? disFiles : tfrFiles;
 
@@ -2778,6 +2806,7 @@ async function submitRequest(faType) {
 
     const item = await api('/sites/' + siteId + '/lists/FA_Requests/items', 'POST', { fields });
     const reqId = item.id;
+    _lgRid = reqId;
     const _faPrefix = title.split('-tmp')[0];
     await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Title: _faPrefix + '-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId } });
 
@@ -2853,12 +2882,16 @@ async function submitRequest(faType) {
       }});
     }
     const _finalTitle = _faPrefix + '-' + new Date(new Date().getTime()+9*3600*1000).toISOString().slice(0,10) + '_ID-' + reqId;
+    logChange('FA Registration', '상신', () => ({ 신청번호: Number(reqId), 제목: _finalTitle, 유형: faType, 결재단계: approvers.length, 첨부: files.length }));   // 10-15
     showAlert('상신이 완료되었습니다.', _finalTitle);
     if (faType === 'Registration') resetRegForm();
     else if (faType === 'Disposal') resetDisposalForm();
     else resetTransferForm();
     switchTab('list');
-  } catch(e) { alert('오류: ' + e.message); }
+  } catch(e) {
+    logChange('FA Registration', '상신 실패', () => ({ 신청번호: _lgRid ? Number(_lgRid) : '', 유형: faType, 오류: logErrText(e) }));   // 10-15
+    alert('오류: ' + e.message);
+  }
   finally { loading(false); }
 }
 
@@ -3034,6 +3067,10 @@ async function uniProcessApproval(apprId, action, reqId, sysKey, comment='') {
   const sys = (typeof _UNIFIED_SYSTEMS !== 'undefined' ? _UNIFIED_SYSTEMS : []).find(s => s.key === sysKey);
   if (!sys) { alert('시스템 정보를 확인할 수 없습니다: ' + sysKey); return; }
   const APR = sys.list, REQ = sys.reqList;
+  // 결재 처리 기록(10-15) — APS 통합 결재함과 같은 「결재 승인」 · 「결재 반려」 + 시스템. 결재행을 쓴 뒤에만 남기고, 쓰기 전 오류는 「…실패」
+  const _lgAct = action==='반려' ? '결재 반려' : '결재 승인';
+  let _lgF = null, _lgW = false, _lgRes = '';
+  const _lg = (what, res, ex) => logChange('FA Registration', what, () => Object.assign({ 시스템: sys.name, 신청번호: Number(reqId), 제목: logReqTitle(_lgF), 결과: res }, logAprDetail(_lgF, { 의견글자수: String(comment||'').length, 목록: APR, 결재행: apprId, 화면: '통합 결재함' }), ex || {}));
   loading(true);
   try {
     // 다른 창에서 이미 처리했는지 먼저 확인 (FA와 동일한 중복 처리 방지)
@@ -3044,11 +3081,14 @@ async function uniProcessApproval(apprId, action, reqId, sysKey, comment='') {
       loadUnifiedBadge().catch(()=>{});
       return;
     }
+    _lgF = _cur.fields;
     await api('/sites/'+siteId+'/lists/'+APR+'/items/'+apprId, 'PATCH', {
       fields: aacPatchWith({ Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }, _cur.fields)
     });
+    _lgW = true;
     if (action === '반려') {
       await api('/sites/'+siteId+'/lists/'+REQ+'/items/'+reqId, 'PATCH', { fields: { Status: '반려' } });
+      _lgRes = '반려 — 신청 반려';
     } else {
       // 다음 대기(잠김) 결재자를 순서대로 깨운다. 없으면 최종 승인완료.
       // 조회 조건에서 Status 를 뺐다(센티넬) — 'RequestID eq N and Status eq 대기(잠김)'
@@ -3059,6 +3099,7 @@ async function uniProcessApproval(apprId, action, reqId, sysKey, comment='') {
       const _ap = await aprRowsRetry('/sites/'+siteId+'/lists/'+APR+"/items?$expand=fields&$top=50&$filter=fields/RequestID eq "+parseInt(reqId));
       if (!_ap.length) {
         console.error('[FA/통합] 결재 행 조회 결과가 비어 있음 — 승인완료 전환 중단. RequestID:', reqId);
+        _lgRes = '승인 기록 · 다음 단계로 넘기지 못함(결재 행 조회 0건)'; _lg(_lgAct, _lgRes);   // APS 와 같은 문구(10-15)
         showAlert('승인은 기록되었으나 다음 단계로 넘기지 못했습니다.',
           '잠시 후 결재함에서 상태를 다시 확인해 주세요. 계속 같은 증상이면 IT팀(stk_it@hyosung.com)에 알려주세요.' + (aprRowsRetry.lastError ? '\n(원인: ' + aprRowsRetry.lastError + ')' : ''), '⚠️');
         if (typeof loadUnifiedData === 'function') await loadUnifiedData();
@@ -3068,18 +3109,29 @@ async function uniProcessApproval(apprId, action, reqId, sysKey, comment='') {
                       .sort((a,b)=>a.fields.ApprovalOrder-b.fields.ApprovalOrder);
       if (next.length) {
         await api('/sites/'+siteId+'/lists/'+APR+'/items/'+next[0].id, 'PATCH', { fields: { Status: '대기' } });
+        _lgRes = '승인 — ' + (next[0].fields.ApprovalOrder ?? '') + '차 결재자에게 넘김';
       } else {
         await api('/sites/'+siteId+'/lists/'+REQ+'/items/'+reqId, 'PATCH', { fields: { Status: '승인완료' } });
+        _lgRes = '승인 — 최종 승인(신청 승인완료)';
       }
     }
+    _lg(_lgAct, _lgRes || '승인');
     showAlert(action + ' 처리되었습니다.', sys.name, action === '반려' ? '❌' : '✅');
     if (typeof loadUnifiedData === 'function') await loadUnifiedData();
     loadUnifiedBadge().catch(()=>{});
-  } catch(e) { alert('오류: ' + e.message); }
+  } catch(e) {
+    if (_lgW && !_lgRes) _lg(_lgAct, '결재행은 기록됨 · 이후 단계 오류 — ' + logErrText(e));   // APS 와 같은 문구
+    else if (!_lgW) _lg(_lgAct + ' 실패', '처리 안 함', { 오류: logErrText(e) });
+    alert('오류: ' + e.message);
+  }
   finally { loading(false); }
 }
 
 async function processApproval(apprId, action, reqId, role, comment='') {
+  // 결재 처리 기록(10-15) — APS 통합 결재함과 같은 「결재 승인」 · 「결재 반려」. 결재행을 쓴 뒤에만 남기고, 쓰기 전 오류는 「…실패」
+  const _lgAct = action==='반려' ? '결재 반려' : '결재 승인';
+  let _lgF = null, _lgW = false, _lgRes = '', _lgCode = '';
+  const _lg = (what, res, ex) => logChange('FA Registration', what, () => Object.assign({ 신청번호: Number(reqId), 제목: logReqTitle(_lgF), 결과: res }, logAprDetail(_lgF, { 의견글자수: String(comment||'').length, 결재행: apprId }), _lgCode ? { FA코드: _lgCode } : {}, ex || {}));
   loading(true);
   try {
         let _cur = await api('/sites/'+siteId+'/lists/FA_Approvals/items/'+apprId+'?$expand=fields');
@@ -3109,17 +3161,21 @@ async function processApproval(apprId, action, reqId, role, comment='') {
     }
     // 결재행에 쓸 값을 먼저 만든다 — 대리 기간이 끝났으면(aacPatchWith 예외) 아무것도 쓰기 전에 멈춘다
     const _aprPatch = aacPatchWith({ Status: action, ApprovalDate: new Date().toISOString(), Comment: comment || '' }, _cur.fields);
+    _lgF = _cur.fields;
     if (_faCode) {
       // FA Code 를 결재행보다 먼저 저장한다 — 이 쓰기가 실패하면 결재행은 대기 그대로라 다시 승인하면 된다.
       await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', {
         fields: { FACode: _faCode }
       });
+      _lgCode = _faCode;   // 기록(10-15) — FA Code 는 저장된 뒤에만 남긴다
     }
 await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
       fields: _aprPatch
     });
+    _lgW = true;
     if (action === '반려') {
       await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '반려' } });
+      _lgRes = '반려 — 신청 반려';
     } else if (action === '승인') {
       // (회계담당자 승인의 FA Code 는 위에서 결재행보다 먼저 저장했다)
       // 다음 대기(잠김) 결재자 확인
@@ -3127,6 +3183,7 @@ await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
       const _ap = await aprRowsRetry('/sites/'+siteId+"/lists/FA_Approvals/items?$expand=fields&$top=50&$filter=fields/RequestID eq "+parseInt(reqId));
       if (!_ap.length) {
         console.error('[FA] 결재 행 조회 결과가 비어 있음 — 승인완료 전환 중단. RequestID:', reqId);
+        _lgRes = '승인 기록 · 다음 단계로 넘기지 못함(결재 행 조회 0건)'; _lg(_lgAct, _lgRes);   // APS 와 같은 문구(10-15)
         showAlert('승인은 기록되었으나 다음 단계로 넘기지 못했습니다.',
           '잠시 후 결재함에서 상태를 다시 확인해 주세요. 계속 같은 증상이면 IT팀(stk_it@hyosung.com)에 알려주세요.' + (aprRowsRetry.lastError ? '\n(원인: ' + aprRowsRetry.lastError + ')' : ''), '⚠️');
         closeModal(); await loadApprovalQueue();
@@ -3136,17 +3193,24 @@ await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + apprId, 'PATCH', {
                       .sort((a,b)=>a.fields.ApprovalOrder-b.fields.ApprovalOrder);
       if (next.length) {
         await api('/sites/' + siteId + '/lists/FA_Approvals/items/' + next[0].id, 'PATCH', { fields: { Status: '대기' } });
+        _lgRes = '승인 — ' + (next[0].fields.ApprovalOrder ?? '') + '차 결재자에게 넘김';
       } else {
         // 모든 결재자 완료 → 승인완료
         await api('/sites/' + siteId + '/lists/FA_Requests/items/' + reqId, 'PATCH', { fields: { Status: '승인완료' } });
+        _lgRes = '승인 — 최종 승인(신청 승인완료)';
       }
     }
+    _lg(_lgAct, _lgRes || '승인');
     showAlert(action + ' 처리되었습니다.', '', action === '반려' ? '❌' : '✅');
     closeModal();
     await loadApprovalQueue();
     await checkApprover();
     loadUnifiedBadge().catch(()=>{});
-  } catch(e) { alert('오류: ' + e.message); }
+  } catch(e) {
+    if (_lgW && !_lgRes) _lg(_lgAct, '결재행은 기록됨 · 이후 단계 오류 — ' + logErrText(e));   // APS 와 같은 문구
+    else if (!_lgW) _lg(_lgAct + ' 실패', '처리 안 함', { 오류: logErrText(e) });
+    alert('오류: ' + e.message);
+  }
   finally { loading(false); }
 }
 
@@ -3510,7 +3574,8 @@ async function exportAdminExcel() {
   if (filterSearch) items = items.filter(i => (i.fields.RequesterEmail||'').toLowerCase().includes(filterSearch));
 
   if (!items.length) { alert('내보낼 데이터가 없습니다.'); return; }
-  logAction('FA Registration', 'Excel 내보내기', { 건수: items.length, 필터: { 상태: filterStatus||'전체', 유형: filterType||'전체', 검색어: filterSearch||'' } });
+  // 출력 기록은 파일을 만든 뒤로 옮겼다(10-15) — 예전에는 만들기 전에 「성공」 으로 남아 실패해도 흔적이 없었다
+  const _xlLog = () => ({ 건수: items.length, 필터: { 상태: filterStatus||'전체', 유형: filterType||'전체', 검색어: filterSearch||'' } });
 
   loading(true, 'Excel 생성 중...');
   try {
@@ -3569,7 +3634,9 @@ async function exportAdminExcel() {
     const now = new Date(new Date().getTime()+9*3600*1000);
     const ds = now.getUTCFullYear()+String(now.getUTCMonth()+1).padStart(2,'0')+String(now.getUTCDate()).padStart(2,'0')+'_'+String(now.getUTCHours()).padStart(2,'0')+String(now.getUTCMinutes()).padStart(2,'0');
     XLSX.writeFile(wb, 'FA_Export_'+ds+'.xlsx');
+    logChange('FA Registration', 'Excel 내보내기', _xlLog);
   } catch(e) {
+    logChange('FA Registration', 'Excel 내보내기 실패', () => Object.assign(_xlLog(), { 오류: logErrText(e) }));
     alert('Excel 생성 실패: ' + e.message);
   } finally {
     loading(false);
@@ -4486,10 +4553,12 @@ async function withdrawRequest(e, reqId, aprList, reqList) {
       api('/sites/'+siteId+'/lists/'+aprList+'/items/'+i.id, 'PATCH', {fields:{Status:'철회(잠김)'}})
     ));
     await api('/sites/'+siteId+'/lists/'+reqList+'/items/'+reqId, 'PATCH', {fields:{Status:'철회'}});
+    logChange('FA Registration', '철회', () => ({ 신청번호: Number(reqId), 제목: logReqTitle(sorted[0] && sorted[0].fields), 목록: reqList, 결재행: myAprs.length }));   // 10-15
     if(typeof showAlert === 'function') showAlert('철회 완료','신청이 철회되었습니다.','✅');
     else alert('신청이 철회되었습니다.');
     loadMyList();
   } catch(err) {
+    logChange('FA Registration', '철회 실패', () => ({ 신청번호: Number(reqId), 목록: reqList, 오류: logErrText(err) }));   // 10-15
     alert('오류: ' + err.message);
   }
 }
